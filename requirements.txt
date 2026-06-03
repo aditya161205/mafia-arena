@@ -1,0 +1,8 @@
+# Core engine, mock agents, evaluation, and tests need NOTHING beyond the stdlib.
+# Install the extras below only for live LLM games and development.
+
+# Live games with Claude agents:
+anthropic>=0.40.0
+
+# Development / testing:
+pytest>=8.0.0

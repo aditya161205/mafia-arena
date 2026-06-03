@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mafia-arena"
+version = "0.1.0"
+description = "A fully autonomous Mafia / Werewolf arena where every player is an LLM agent, with a deception/detection evaluation harness."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "mafia-arena contributors" }]
+keywords = ["mafia", "werewolf", "llm", "agents", "social-deduction", "evaluation"]
+
+dependencies = []  # the core runs on the stdlib alone (mock backend)
+
+[project.optional-dependencies]
+anthropic = ["anthropic>=0.40.0"]
+dev = ["pytest>=8.0.0"]
+
+[project.scripts]
+mafia = "mafia.cli:main"
+
+[tool.setuptools]
+packages = ["mafia"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
