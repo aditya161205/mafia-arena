@@ -43,10 +43,9 @@ class GameLogger:
                 print(line)
 
 
-def save_game(state: GameState, path: str | Path) -> Path:
-    path = Path(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    payload = {
+def game_to_payload(state: GameState) -> dict:
+    """Serialise a finished game to a plain dict (shared by file-save and the UI)."""
+    return {
         "config": state.config,
         "winner": state.winner.value if state.winner else None,
         "players": [
@@ -56,7 +55,12 @@ def save_game(state: GameState, path: str | Path) -> Path:
         ],
         "events": [e.to_dict() for e in state.events],
     }
-    path.write_text(json.dumps(payload, indent=2))
+
+
+def save_game(state: GameState, path: str | Path) -> Path:
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(game_to_payload(state), indent=2))
     return path
 
 

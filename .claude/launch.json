@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "mafia-ui",
+      "runtimeExecutable": ".venv/bin/python",
+      "runtimeArgs": ["-m", "mafia", "serve", "--port", "8000"],
+      "port": 8000
+    }
+  ]
+}

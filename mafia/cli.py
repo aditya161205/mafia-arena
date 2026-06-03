@@ -102,6 +102,12 @@ def cmd_replay(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_serve(args: argparse.Namespace) -> int:
+    from .server import serve
+    serve(host=args.host, port=args.port)
+    return 0
+
+
 def _add_common(p: argparse.ArgumentParser) -> None:
     p.add_argument("--players", type=int, default=6, help="number of players (>=5)")
     p.add_argument("--rounds", type=int, default=2, help="discussion rounds per day")
@@ -142,6 +148,11 @@ def build_parser() -> argparse.ArgumentParser:
     p_rep.add_argument("--reasoning", action="store_true")
     p_rep.add_argument("--no-color", action="store_true")
     p_rep.set_defaults(func=cmd_replay)
+
+    p_srv = sub.add_parser("serve", help="launch the web UI to watch games in a browser")
+    p_srv.add_argument("--host", default="127.0.0.1")
+    p_srv.add_argument("--port", type=int, default=8000)
+    p_srv.set_defaults(func=cmd_serve)
 
     return parser
 

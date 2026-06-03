@@ -40,6 +40,22 @@ python -m mafia play --save games/g.json
 python -m mafia replay games/g.json --reasoning
 ```
 
+### Watch it in your browser (no API key needed)
+
+```bash
+python -m mafia serve          # then open http://localhost:8000
+```
+
+A self-contained web UI (Python stdlib server + one HTML file, **no JS build, no
+npm**) lets you watch games unfold:
+
+- a **New Game** button that runs the engine live (set players / rounds / seed),
+- a player roster with avatars and live **alive/dead** status,
+- **day/night theming** and animated, color-coded chat bubbles for every speech,
+- play / pause / step / speed controls (and `Space` / `←` / `→` shortcuts),
+- a **👁 God mode** toggle that reveals roles, secret night actions, and each
+  agent's private chain-of-thought — turn it off to spectate blind like the town.
+
 ### Live games with Claude agents
 
 ```bash
@@ -91,7 +107,9 @@ mafia/
   evaluation.py     Deception & detection metrics, aggregation, Wilson CIs
   logging_util.py   Structured JSON persistence + colourised replay
   arena.py          run_game / run_many / run_ablation orchestration
-  cli.py            `python -m mafia {play,eval,ablate,replay}`
+  cli.py            `python -m mafia {play,eval,ablate,replay,serve}`
+  server.py         stdlib HTTP server: runs games on demand for the web UI
+  static/index.html dependency-free single-page viewer (the browser UI)
 tests/              13 tests covering engine invariants, evaluation, parsing
 examples/run_demo.py
 ```

@@ -24,5 +24,8 @@ mafia = "mafia.cli:main"
 [tool.setuptools]
 packages = ["mafia"]
 
+[tool.setuptools.package-data]
+mafia = ["static/*.html"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]

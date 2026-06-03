@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Mafia / Werewolf Arena</title>
+<style>
+  :root {
+    --bg: #0c0f1a; --panel: #151a2b; --panel2: #1c2238; --line: #2a3252;
+    --text: #e7ecff; --muted: #8a93b8; --accent: #7c8cff;
+    --mafia: #ff5c7a; --town: #43d39e; --detective: #5db0ff; --doctor: #36c7c2;
+    --night: linear-gradient(160deg,#0a0f25,#131a3a); --day: linear-gradient(160deg,#1a2140,#2a2342);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg); color: var(--text); height: 100vh; overflow: hidden;
+  }
+  header {
+    display: flex; align-items: center; gap: 14px; padding: 12px 18px;
+    background: var(--panel); border-bottom: 1px solid var(--line); flex-wrap: wrap;
+  }
+  header h1 { font-size: 17px; margin: 0; letter-spacing: .3px; }
+  header h1 .moon { filter: drop-shadow(0 0 6px #7c8cff88); }
+  .controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .controls label { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 5px; }
+  .controls input[type=number] {
+    width: 56px; background: var(--panel2); border: 1px solid var(--line); color: var(--text);
+    border-radius: 7px; padding: 5px 7px; font-size: 13px;
+  }
+  .controls input[type=text] {
+    width: 92px; background: var(--panel2); border: 1px solid var(--line); color: var(--text);
+    border-radius: 7px; padding: 5px 7px; font-size: 13px;
+  }
+  button {
+    background: var(--accent); color: #0b0e18; border: none; border-radius: 8px;
+    padding: 7px 13px; font-size: 13px; font-weight: 650; cursor: pointer;
+  }
+  button.ghost { background: var(--panel2); color: var(--text); border: 1px solid var(--line); font-weight: 500; }
+  button:disabled { opacity: .45; cursor: default; }
+  .toggle { cursor: pointer; user-select: none; }
+  .spacer { flex: 1; }
+
+  main { display: grid; grid-template-columns: 270px 1fr; height: calc(100vh - 57px); }
+  .roster { background: var(--panel); border-right: 1px solid var(--line); overflow-y: auto; padding: 14px; }
+  .roster h2 { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin: 4px 2px 12px; }
+  .pcard {
+    display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 11px;
+    background: var(--panel2); margin-bottom: 8px; border: 1px solid transparent; transition: .25s;
+  }
+  .pcard.dead { opacity: .42; filter: grayscale(.6); }
+  .pcard.speaking { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent), 0 0 18px #7c8cff44; }
+  .avatar {
+    width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center;
+    font-weight: 700; font-size: 15px; color: #0b0e18; flex-shrink: 0;
+  }
+  .pname { font-size: 14px; font-weight: 600; }
+  .prole { font-size: 11px; color: var(--muted); margin-top: 1px; }
+  .badge { font-size: 10px; padding: 1px 7px; border-radius: 20px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; }
+  .b-mafia { background: #ff5c7a22; color: var(--mafia); }
+  .b-town { background: #43d39e22; color: var(--town); }
+  .b-detective { background: #5db0ff22; color: var(--detective); }
+  .b-doctor { background: #36c7c222; color: var(--doctor); }
+  .b-unknown { background: #ffffff14; color: var(--muted); }
+  .skull { margin-left: auto; font-size: 14px; }
+
+  .stage { display: flex; flex-direction: column; min-width: 0; }
+  .phasebar {
+    padding: 10px 20px; display: flex; align-items: center; gap: 14px;
+    border-bottom: 1px solid var(--line); transition: background .6s; background: var(--night);
+  }
+  .phasebar.day { background: var(--day); }
+  .phase-emoji { font-size: 22px; }
+  .phase-title { font-size: 15px; font-weight: 700; }
+  .phase-sub { font-size: 12px; color: var(--muted); }
+  .winner { margin-left: auto; font-weight: 800; padding: 5px 14px; border-radius: 20px; display: none; }
+  .winner.town { background: #43d39e22; color: var(--town); display: block; }
+  .winner.mafia { background: #ff5c7a22; color: var(--mafia); display: block; }
+
+  .feed { flex: 1; overflow-y: auto; padding: 18px 22px; scroll-behavior: smooth; }
+  .ev { margin: 0 0 13px; animation: pop .35s ease; }
+  @keyframes pop { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  .sys {
+    text-align: center; color: var(--muted); font-size: 12.5px; margin: 16px 0;
+    display: flex; align-items: center; gap: 10px; justify-content: center;
+  }
+  .sys::before, .sys::after { content: ""; height: 1px; background: var(--line); flex: 1; max-width: 90px; }
+  .sys.kill { color: var(--mafia); font-weight: 600; }
+  .sys.save { color: var(--town); font-weight: 600; }
+  .sys.elim { color: #ffb454; font-weight: 600; }
+  .sys.win { color: var(--town); font-size: 16px; font-weight: 800; }
+  .chat { display: flex; gap: 10px; align-items: flex-start; }
+  .bubble { background: var(--panel2); border: 1px solid var(--line); border-radius: 4px 14px 14px 14px; padding: 9px 13px; max-width: 680px; }
+  .bubble .who { font-size: 12.5px; font-weight: 700; margin-bottom: 2px; }
+  .bubble .txt { font-size: 14px; line-height: 1.45; }
+  .vote { font-size: 13px; color: var(--detective); display: flex; align-items: center; gap: 7px; padding-left: 46px; }
+  .think { font-size: 12px; color: var(--muted); font-style: italic; padding-left: 46px; margin-top: 2px; }
+  .night-act { font-size: 12.5px; color: #b39ddb; padding-left: 8px; }
+
+  .playbar {
+    display: flex; align-items: center; gap: 14px; padding: 11px 20px;
+    border-top: 1px solid var(--line); background: var(--panel);
+  }
+  .playbar .prog { flex: 1; height: 6px; background: var(--panel2); border-radius: 6px; overflow: hidden; }
+  .playbar .prog > div { height: 100%; background: var(--accent); width: 0; transition: width .2s; }
+  .playbar .count { font-size: 12px; color: var(--muted); min-width: 70px; text-align: right; }
+  .speed { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+  .iconbtn { background: var(--panel2); border: 1px solid var(--line); color: var(--text); width: 36px; height: 32px; border-radius: 8px; font-size: 14px; padding: 0; }
+  .loading { text-align: center; color: var(--muted); margin-top: 40px; font-size: 14px; }
+  .err { color: var(--mafia); text-align: center; margin-top: 40px; }
+</style>
+</head>
+<body>
+<header>
+  <h1><span class="moon">🌙</span> Mafia Arena</h1>
+  <div class="controls">
+    <label>Players <input id="players" type="number" min="5" max="12" value="7" /></label>
+    <label>Rounds <input id="rounds" type="number" min="0" max="5" value="2" /></label>
+    <label>Seed <input id="seed" type="text" value="random" /></label>
+    <button id="newgame">▶ New Game</button>
+  </div>
+  <div class="spacer"></div>
+  <label class="toggle"><input type="checkbox" id="godmode" /> 👁 God mode (roles · night · thoughts)</label>
+</header>
+
+<main>
+  <aside class="roster">
+    <h2>Players</h2>
+    <div id="roster"></div>
+  </aside>
+
+  <section class="stage">
+    <div class="phasebar" id="phasebar">
+      <span class="phase-emoji" id="phaseEmoji">🌙</span>
+      <div>
+        <div class="phase-title" id="phaseTitle">Press “New Game” to begin</div>
+        <div class="phase-sub" id="phaseSub">Every player is an LLM agent. Watch them deceive and deduce.</div>
+      </div>
+      <div class="winner" id="winner"></div>
+    </div>
+
+    <div class="feed" id="feed">
+      <div class="loading">Configure a table above and hit <b>New Game</b>.</div>
+    </div>
+
+    <div class="playbar">
+      <button class="iconbtn" id="restart" title="Restart">⏮</button>
+      <button class="iconbtn" id="stepback" title="Step back">⏪</button>
+      <button class="iconbtn" id="playpause" title="Play / Pause">⏸</button>
+      <button class="iconbtn" id="stepfwd" title="Step forward">⏩</button>
+      <div class="speed">Speed
+        <input id="speed" type="range" min="1" max="10" value="5" />
+      </div>
+      <div class="prog"><div id="progbar"></div></div>
+      <div class="count" id="count">0 / 0</div>
+    </div>
+  </section>
+</main>
+
+<script>
+const AV_COLORS = ["#7c8cff","#43d39e","#ff5c7a","#ffb454","#5db0ff","#36c7c2","#c792ea","#f78c6c","#82aaff","#c3e88d","#ff9cac","#89ddff"];
+const ROLE_BADGE = { mafia:"b-mafia", villager:"b-town", detective:"b-detective", doctor:"b-doctor" };
+const $ = id => document.getElementById(id);
+
+let GAME = null;       // raw payload
+let STEPS = [];        // events shown under current mode
+let idx = 0;           // how many steps revealed
+let timer = null;
+let playing = false;
+
+function avatarColor(name){ let h=0; for(const c of name) h=(h*31+c.charCodeAt(0))>>>0; return AV_COLORS[h%AV_COLORS.length]; }
+function godMode(){ return $("godmode").checked; }
+
+function visibleUnderMode(ev){
+  const god = godMode();
+  if (["reasoning"].includes(ev.type)) return god;
+  if (["investigation","night_action"].includes(ev.type)) return god;
+  return true; // game_start, night_start, day_start, kill, save, speech, vote, elimination, game_over
+}
+
+function rebuildSteps(preserveRatio){
+  const ratio = STEPS.length ? idx / STEPS.length : 1;
+  STEPS = GAME.events.filter(visibleUnderMode);
+  idx = preserveRatio ? Math.round(ratio * STEPS.length) : STEPS.length;
+  render();
+}
+
+// ---- state reconstruction up to current idx ----
+function stateAt(n){
+  const dead = {}, revealed = {};
+  let day = 0, phase = "night", speaking = null, winner = null;
+  for (let i=0;i<n;i++){
+    const e = STEPS[i];
+    if (e.day) day = e.day;
+    if (e.phase) phase = e.phase;
+    if (e.type==="kill" || e.type==="elimination"){ dead[e.target]=true; revealed[e.target]=e.meta && e.meta.role; }
+    if (e.type==="speech" || e.type==="vote") speaking = e.actor; else if (["night_start","day_start","kill","elimination"].includes(e.type)) speaking=null;
+    if (e.type==="game_over"){ winner = e.meta && e.meta.winner; }
+  }
+  return { dead, revealed, day, phase, speaking, winner };
+}
+
+function renderRoster(st){
+  const wrap = $("roster"); wrap.innerHTML="";
+  for (const p of GAME.players){
+    const dead = st.dead[p.name];
+    const showRole = godMode() || dead || st.winner;
+    const role = p.role;
+    const div = document.createElement("div");
+    div.className = "pcard" + (dead?" dead":"") + (st.speaking===p.name && !dead?" speaking":"");
+    const badgeClass = showRole ? (ROLE_BADGE[role]||"b-unknown") : "b-unknown";
+    const badgeText = showRole ? role : "???";
+    div.innerHTML = `
+      <div class="avatar" style="background:${avatarColor(p.name)}">${p.name[0]}</div>
+      <div style="min-width:0">
+        <div class="pname">${p.name}</div>
+        <div class="prole"><span class="badge ${badgeClass}">${badgeText}</span></div>
+      </div>
+      ${dead?'<span class="skull">💀</span>':''}`;
+    wrap.appendChild(div);
+  }
+}
+
+function renderPhase(st){
+  const bar = $("phasebar"); const isDay = st.phase && st.phase.startsWith("day");
+  bar.classList.toggle("day", isDay);
+  $("phaseEmoji").textContent = st.winner ? "🏁" : (isDay ? "☀️" : "🌙");
+  if (st.winner){
+    $("phaseTitle").textContent = "Game over";
+    $("phaseSub").textContent = "";
+  } else {
+    $("phaseTitle").textContent = (isDay?"Day ":"Night ") + (st.day||1);
+    $("phaseSub").textContent = isDay ? "Discussion & voting" : "Secret night actions";
+  }
+  const w = $("winner");
+  w.className = "winner" + (st.winner?(" "+st.winner):"");
+  w.textContent = st.winner ? (st.winner.toUpperCase()+" WIN") : "";
+}
+
+function eventHTML(e){
+  switch(e.type){
+    case "game_start": return `<div class="sys">${e.content}</div>`;
+    case "night_start": return `<div class="sys">🌙 Night ${e.day} — the town sleeps</div>`;
+    case "day_start": return `<div class="sys">☀️ Day ${e.day} — ${e.content}</div>`;
+    case "kill": return `<div class="sys kill">💀 ${e.target} was killed in the night${e.meta&&e.meta.role?` — was <b>${e.meta.role}</b>`:""}</div>`;
+    case "save": return `<div class="sys save">🛡️ The mafia struck, but the doctor saved the target!</div>`;
+    case "elimination": return `<div class="sys elim">⚖️ ${e.target} was voted out${e.meta&&e.meta.role?` — was <b>${e.meta.role}</b>`:""}</div>`;
+    case "game_over": return `<div class="sys win">🏁 ${e.content}</div>`;
+    case "investigation": return `<div class="night-act">🔎 <b>${e.actor}</b> investigated ${e.target}: <b>${(e.meta&&e.meta.faction||"?").toUpperCase()}</b></div>`;
+    case "night_action": {
+      const kind = e.meta && e.meta.kind || "acts";
+      const label = kind==="kill_vote" ? "🔪 targets" : (kind==="protect" ? "🛡️ protects" : "acts on");
+      return `<div class="night-act">• <b>${e.actor}</b> ${label} ${e.target}</div>`;
+    }
+    case "reasoning": return `<div class="think">💭 ${e.actor} thinks: ${esc(e.content)}</div>`;
+    case "speech": {
+      const c = avatarColor(e.actor);
+      return `<div class="chat">
+        <div class="avatar" style="background:${c}">${e.actor[0]}</div>
+        <div class="bubble"><div class="who" style="color:${c}">${e.actor}</div><div class="txt">${esc(e.content)}</div></div>
+      </div>`;
+    }
+    case "vote": return `<div class="vote">🗳️ <b>${e.actor}</b> votes for <b>${e.target}</b></div>`;
+    default: return "";
+  }
+}
+function esc(s){ return (s||"").replace(/[&<>]/g, m=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[m])); }
+
+function render(){
+  if (!GAME) return;
+  const st = stateAt(idx);
+  renderRoster(st);
+  renderPhase(st);
+  const feed = $("feed"); feed.innerHTML="";
+  for (let i=0;i<idx;i++){
+    const html = eventHTML(STEPS[i]);
+    if (html){ const d=document.createElement("div"); d.className="ev"; d.innerHTML=html; feed.appendChild(d); }
+  }
+  feed.scrollTop = feed.scrollHeight;
+  $("count").textContent = `${idx} / ${STEPS.length}`;
+  $("progbar").style.width = (STEPS.length? (idx/STEPS.length*100):0) + "%";
+  $("playpause").textContent = playing ? "⏸" : "▶";
+}
+
+function stepForward(){ if (idx < STEPS.length){ idx++; render(); } else pause(); }
+function stepBack(){ if (idx>0){ idx--; render(); } }
+function restart(){ idx=0; render(); }
+
+function play(){ if (!GAME || idx>=STEPS.length){ idx=0; } playing=true; schedule(); render(); }
+function pause(){ playing=false; if (timer) clearTimeout(timer); timer=null; render(); }
+function togglePlay(){ playing ? pause() : play(); }
+function schedule(){
+  if (!playing) return;
+  if (timer) clearTimeout(timer);
+  const sp = +$("speed").value;          // 1..10
+  const delay = 1300 - sp*115;            // ~185ms (fast) .. 1185ms (slow)
+  timer = setTimeout(()=>{
+    if (idx < STEPS.length){ idx++; render(); schedule(); } else pause();
+  }, Math.max(120, delay));
+}
+
+async function newGame(){
+  pause();
+  const players = $("players").value, rounds = $("rounds").value, seed = $("seed").value.trim();
+  $("feed").innerHTML = `<div class="loading">Running game… the agents are deliberating.</div>`;
+  $("phaseTitle").textContent = "Loading…";
+  try {
+    const qs = new URLSearchParams({ players, rounds, provider:"mock" });
+    if (seed && seed!=="random") qs.set("seed", seed);
+    const res = await fetch("/api/game?"+qs.toString());
+    const data = await res.json();
+    if (data.error){ $("feed").innerHTML = `<div class="err">Error: ${esc(data.error)}</div>`; return; }
+    GAME = data;
+    STEPS = GAME.events.filter(visibleUnderMode);
+    idx = 0; render();
+    play();   // auto-play the new game
+  } catch (e){
+    $("feed").innerHTML = `<div class="err">Could not reach the server. Is it running?</div>`;
+  }
+}
+
+// wiring
+$("newgame").onclick = newGame;
+$("playpause").onclick = togglePlay;
+$("stepfwd").onclick = ()=>{ pause(); stepForward(); };
+$("stepback").onclick = ()=>{ pause(); stepBack(); };
+$("restart").onclick = ()=>{ pause(); restart(); };
+$("speed").oninput = ()=>{ if (playing) schedule(); };
+$("godmode").onchange = ()=>{ if (GAME) rebuildSteps(true); };
+window.addEventListener("keydown", e=>{
+  if (e.code==="Space"){ e.preventDefault(); togglePlay(); }
+  else if (e.code==="ArrowRight"){ pause(); stepForward(); }
+  else if (e.code==="ArrowLeft"){ pause(); stepBack(); }
+});
+
+// auto-start one game on load
+newGame();
+</script>
+</body>
+</html>
