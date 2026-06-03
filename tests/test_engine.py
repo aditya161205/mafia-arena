@@ -125,6 +125,88 @@ def test_wilson_interval_bounds():
     assert 0.0 <= lo <= 0.5 <= hi <= 1.0
 
 
+# ----------------------------------------------------- new research metrics ----
+from mafia.evaluation import (
+    consistency_scores, evidence_vote_metrics, extract_role_claims, mafia_consistency,
+)
+from mafia.state import Event, EventType, GameState, Phase
+from mafia.state import Player as P
+from mafia.roles import Role
+
+
+def test_role_claim_extraction():
+    assert extract_role_claims("Honestly, I'm the detective and I checked Bob.") == {"detective"}
+    assert extract_role_claims("I am just a villager, I swear") == {"villager"}
+    assert extract_role_claims("I'm the cop") == {"detective"}  # synonym
+    assert extract_role_claims("Bob is the doctor") == set()    # not a self-claim
+
+
+def _mini_state():
+    players = [P("A", Role.MAFIA), P("B", Role.VILLAGER), P("C", Role.DETECTIVE),
+               P("D", Role.VILLAGER)]
+    players[0].partners = []
+    return GameState(players=players, day=1, phase=Phase.DAY_DISCUSSION)
+
+
+def test_consistency_penalises_role_flip():
+    st = _mini_state()
+    st.events += [
+        Event(EventType.SPEECH, 1, Phase.DAY_DISCUSSION, actor="A", content="I'm the detective"),
+        Event(EventType.SPEECH, 2, Phase.DAY_DISCUSSION, actor="A", content="I'm just a villager"),
+    ]
+    scores = consistency_scores(st)
+    assert scores["A"] <= 0.5  # contradictory role claims are heavily penalised
+
+
+def test_consistency_penalises_unjustified_accusation_flip():
+    st = _mini_state()
+    # A accuses B, then flips to C while B is still alive -> unjustified flip.
+    st.events += [
+        Event(EventType.VOTE, 1, Phase.DAY_VOTE, actor="A", target="B"),
+        Event(EventType.VOTE, 2, Phase.DAY_VOTE, actor="A", target="C"),
+    ]
+    assert consistency_scores(st)["A"] < 1.0
+
+
+def test_consistency_allows_justified_flip_after_death():
+    st = _mini_state()
+    st.events += [
+        Event(EventType.VOTE, 1, Phase.DAY_VOTE, actor="A", target="B"),
+        Event(EventType.ELIMINATION, 1, Phase.DAY_VOTE, target="B"),
+        Event(EventType.VOTE, 2, Phase.DAY_VOTE, actor="A", target="C"),
+    ]
+    # switching off B is fine once B is gone
+    assert consistency_scores(st)["A"] == 1.0
+
+
+def test_evidence_grounding_detects_hallucination():
+    st = _mini_state()
+    st.events += [
+        Event(EventType.SPEECH, 1, Phase.DAY_DISCUSSION, actor="B", target="C", content="C is off"),
+        # grounded: cites B who really acted earlier, and names the vote target C
+        Event(EventType.VOTE, 1, Phase.DAY_VOTE, actor="A", target="C",
+              meta={"citations": ["B accused C on day 1"]}),
+        # hallucinated: cites D who never acted before this vote
+        Event(EventType.VOTE, 1, Phase.DAY_VOTE, actor="B", target="C",
+              meta={"citations": ["D exposed C earlier"]}),
+    ]
+    rate, grounding = evidence_vote_metrics(st)
+    assert rate == 0.5          # 1 of 2 votes cites the target with real evidence
+    assert grounding == 0.5     # 1 of 2 citations is grounded in a real prior action
+
+
+def test_mafia_consistency_in_full_game():
+    state, metrics = run_game(GameConfig(num_players=7, seed=3), provider="mock")
+    # mock agents cite real events, so grounding should be perfect
+    assert metrics.citation_grounding == 1.0
+    assert metrics.evidence_vote_rate == 1.0
+    assert 0.0 <= (metrics.mafia_consistency or 1.0) <= 1.0
+    assert len(state.beliefs) > 0
+    # belief snapshots are keyed to event indices and only cover living agents
+    snap = state.beliefs[-1]
+    assert "beliefs" in snap and "i" in snap
+
+
 def test_invalid_target_falls_back_to_living():
     """An agent naming a dead/invalid player still yields a legal action."""
     cfg = GameConfig(num_players=6, seed=4)

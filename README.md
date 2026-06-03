@@ -10,11 +10,33 @@ The whole game state lives in natural language, which makes it a clean testbed f
 the hard parts of multi-agent AI: **theory-of-mind**, **strategic deception**, and
 **real-time belief updating from text**. This repo ships a complete game engine, a
 per-agent memory/agent framework, an LLM abstraction (Claude or an offline mock),
-a **deception/detection evaluation harness**, and structured logging + replay.
+a **deception / detection / reasoning-quality evaluation harness**, a **browser UI
+with a live belief dashboard**, and structured logging + replay.
 
 > **Runs with zero dependencies and zero API keys.** The engine, agents, evaluation,
-> and tests all work out-of-the-box on a deterministic, rule-based *mock* backend.
+> UI, and tests all work out-of-the-box on a deterministic, rule-based *mock* backend.
 > Plug in the Anthropic backend for live Claude-vs-Claude games.
+
+### Why this is interesting (for AI / ML work)
+
+Most agent demos stop at "it runs." The hard, interview-worthy part of social
+deduction is **measuring whether the reasoning is any good**, and this project is
+built around that:
+
+- **Belief tracking** — every agent's suspicion vector over every other player is
+  snapshotted after each speech, vote, and night result, so you can watch beliefs
+  *update from natural-language evidence* over time (and render it live).
+- **Alibi / lie consistency** — mafia agents are scored on whether their public
+  story holds together: contradictory role-claims and unjustified accusation flips
+  are detected and penalised. A direct, automatable proxy for *deception quality*.
+- **Evidence-based voting** — agents must **cite specific prior statements/votes**
+  before voting; citations are checked against the actual event log, so we separate
+  *grounded reasoning* from confident hallucination — judging **reasoning quality,
+  not just win rate**.
+
+Together these turn an entertaining game into a reproducible **multi-agent
+evaluation benchmark** with theory-of-mind, deception, and grounded-reasoning
+metrics, ablations, and confidence intervals.
 
 ---
 
@@ -52,6 +74,10 @@ npm**) lets you watch games unfold:
 - a **New Game** button that runs the engine live (set players / rounds / seed),
 - a player roster with avatars and live **alive/dead** status,
 - **day/night theming** and animated, color-coded chat bubbles for every speech,
+- **grounded citations shown under each vote** (the evidence the agent cited),
+- a **live Belief Dashboard** (right pane): pick any agent (or "Town consensus")
+  and watch their suspicion of everyone else update bar-by-bar through the game,
+- a **Game-metrics card** (detection / deception / reasoning-quality) at game end,
 - play / pause / step / speed controls (and `Space` / `←` / `→` shortcuts),
 - a **👁 God mode** toggle that reveals roles, secret night actions, and each
   agent's private chain-of-thought — turn it off to spectate blind like the town.
@@ -104,7 +130,8 @@ mafia/
   prompts.py        Per-role system prompts (mafia = deceive; town = infer) + CoT contract
   agents.py         Agent: filtered memory, belief/suspicion model, action parsing
   engine.py         Phase logic, night/day resolution, voting, the game loop
-  evaluation.py     Deception & detection metrics, aggregation, Wilson CIs
+  evaluation.py     Detection, deception (alibi consistency) & reasoning-quality
+                    (evidence-grounded voting) metrics, aggregation, Wilson CIs
   logging_util.py   Structured JSON persistence + colourised replay
   arena.py          run_game / run_many / run_ablation orchestration
   cli.py            `python -m mafia {play,eval,ablate,replay,serve}`
@@ -146,23 +173,53 @@ Social deduction has no scalar reward, so we measure the things the research
 question is actually about. All metrics are computed purely from a finished (or
 reloaded) game log, so they're reproducible from a saved file.
 
-| Metric | What it captures |
-|--------|------------------|
-| **Town vote accuracy** | Share of town *day-votes* cast at real mafia — town's raw lie-detection signal. |
-| **Elimination accuracy** | Share of *day-eliminations* that were actually mafia — did the coalition convert? |
-| **Deception index** | `1 − town vote accuracy` — the share of town suspicion the mafia *dodged*. High = convincing alibis. |
-| **Mafia lifespan** | Mean number of days a mafia member survived. |
-| **Detective value** | Share of the detective's confirmed-mafia findings the town acted on. |
-| **Win rates + Wilson 95% CI** | The bottom line, with proper confidence intervals over a batch. |
+| Metric | Pillar | What it captures |
+|--------|--------|------------------|
+| **Town vote accuracy** | Detection | Share of town *day-votes* cast at real mafia — town's raw lie-detection signal. |
+| **Elimination accuracy** | Detection | Share of *day-eliminations* that were actually mafia — did the coalition convert? |
+| **Detective value** | Detection | Share of the detective's confirmed-mafia findings the town acted on. |
+| **Deception index** | Deception | `1 − town vote accuracy` — the share of town suspicion the mafia *dodged*. High = convincing alibis. |
+| **Alibi consistency** | Deception | Mafia's internal story coherence: penalises contradictory role-claims and unjustified accusation flips. High = a coherent, hard-to-catch liar. |
+| **Mafia lifespan** | Deception | Mean number of days a mafia member survived. |
+| **Evidence-based votes** | Reasoning | Share of votes that cite the *voted player's real prior behaviour* (grounded justification, right target). |
+| **Citation grounding** | Reasoning | Share of *all* citations that reference a real prior action in the log, vs. hallucinated references. |
+| **Win rates + Wilson 95% CI** | Outcome | The bottom line, with proper confidence intervals over a batch. |
 
-Example over 60 games of the offline baseline (7 players, 2 mafia):
+#### How each new metric is computed
+
+- **Belief tracking** (`GameState.beliefs`) — after every public event the engine
+  snapshots `agent.suspicion_scores()` for each living agent, keyed to the event
+  index. The browser UI replays these as animated bars ("how did Bob's suspicion
+  of Carol move after that speech?"); analysis code can diff snapshots directly.
+- **Alibi consistency** (`evaluation.consistency_scores`) — each player's role
+  self-claims are regex-extracted from speech; >1 distinct claim is a contradiction.
+  Accusation *flips* (changing your named suspect while the previous one is still
+  alive — i.e. not because they were removed) are counted as unjustified. Score =
+  `target_consistency × (0.5 if role-contradiction else 1.0)`, averaged over mafia.
+- **Evidence-based voting** (`evaluation.evidence_vote_metrics`) — agents return a
+  `citations` list with each vote. A citation is *grounded* iff it names a player
+  who actually acted earlier in the log; a vote is *evidence-based* iff a grounded
+  citation also names the player being voted for. This catches the failure mode of
+  fluent-but-fabricated justifications.
+
+Example over 40 games of the offline baseline (7 players, 2 mafia):
 
 ```
-Town win rate:            15.0%        Town vote accuracy:   37.3%
-Mafia win rate:           85.0%        Elimination accuracy: 21.8%
-Mean game length:         2.42 days    Mafia deception index:62.7%
-Town win-rate 95% CI:    [8.1%, 26.1%] Detective value:      35.5%
+Town win rate:            27.5%        -- Deception (mafia) --
+Mafia win rate:           72.5%        Mafia deception index:    60.2%
+Mean game length:         2.38 days    Mafia alibi consistency:  96.0%
+-- Detection (town) --                 Mean mafia lifespan:      2.09 days
+Town vote accuracy:       39.8%        -- Reasoning quality --
+Elimination accuracy:     27.5%        Evidence-based votes:    100.0%
+Detective value:          40.0%        Citation grounding:      100.0%
+Town win-rate 95% CI:    [16.1%, 42.8%]
 ```
+
+> The rule-based mock agents are *honest by construction*, so they ceiling the
+> reasoning-quality metrics (100%) and stay highly consistent (96%) — exactly the
+> baseline you want. The metrics earn their keep on **real LLM agents**, where
+> grounding and consistency drop and start to *discriminate* models, prompts, and
+> memory depths. That separation is the point.
 
 ### Ablations
 

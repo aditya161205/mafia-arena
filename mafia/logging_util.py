@@ -54,6 +54,7 @@ def game_to_payload(state: GameState) -> dict:
             for p in state.players
         ],
         "events": [e.to_dict() for e in state.events],
+        "beliefs": state.beliefs,
     }
 
 
@@ -96,7 +97,11 @@ def format_event(event: Event, *, show_reasoning: bool, color: bool = True) -> s
     if t is EventType.SPEECH:
         return f"   {_c(event.actor + ':', 'bold', color=color)} {event.content}"
     if t is EventType.VOTE:
-        return _c(f"   🗳️  {event.actor} votes for {event.target}.", "cyan", color=color)
+        line = _c(f"   🗳️  {event.actor} votes for {event.target}.", "cyan", color=color)
+        cites = (event.meta or {}).get("citations", [])
+        for c in cites:
+            line += "\n" + _c(f"        ↳ {c}", "dim", color=color)
+        return line
     if t is EventType.ELIMINATION:
         return _c(f"   ⚖️  {event.target} was voted out (was {event.meta.get('role','?')}).",
                   "red", color=color)

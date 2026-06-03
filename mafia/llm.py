@@ -137,6 +137,7 @@ class MockClient:
                 "reasoning": self._vote_reasoning(target, role, ctx),
                 "target": target,
                 "message": line,
+                "citations": self._citations(target, ctx),
             })
         # default: a daytime speech
         target = pick_suspect()
@@ -225,6 +226,24 @@ class MockClient:
             f"Voting {target} — and if I'm wrong, the flip tells us plenty.",
             f"{target}. I've heard enough deflection from them.",
         ])
+
+    def _citations(self, target, ctx) -> list[str]:
+        """Build grounded citations referencing real prior events about `target`."""
+        if not target:
+            return []
+        evidence = ctx.get("evidence", []) or []
+        cites: list[str] = []
+        # 1) Times the target was flagged/voted by others (corroboration).
+        on_target = [e for e in evidence if e.get("target") == target]
+        for e in on_target[:2]:
+            cites.append(f"{e['actor']} {e['kind']} {target} on day {e['day']}.")
+        # 2) The target's own prior actions (their behaviour as evidence).
+        by_target = [e for e in evidence if e.get("actor") == target]
+        for e in by_target[:1]:
+            cites.append(f"{target} {e['kind']} {e['target']} on day {e['day']}, which I found telling.")
+        if not cites:
+            cites.append(f"{target} has avoided every hard question and never committed to a read.")
+        return cites[:3]
 
     def _vote_reasoning(self, target, role, ctx) -> str:
         if role == "mafia":

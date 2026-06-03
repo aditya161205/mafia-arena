@@ -6,334 +6,385 @@
 <title>Mafia / Werewolf Arena</title>
 <style>
   :root {
-    --bg: #0c0f1a; --panel: #151a2b; --panel2: #1c2238; --line: #2a3252;
-    --text: #e7ecff; --muted: #8a93b8; --accent: #7c8cff;
-    --mafia: #ff5c7a; --town: #43d39e; --detective: #5db0ff; --doctor: #36c7c2;
-    --night: linear-gradient(160deg,#0a0f25,#131a3a); --day: linear-gradient(160deg,#1a2140,#2a2342);
+    --bg:#0b0e17; --panel:#121726; --panel2:#1a2034; --panel3:#222a42; --line:#28304c;
+    --text:#eaeefb; --muted:#8b94b8; --faint:#5d6488; --accent:#8b9bff;
+    --mafia:#ff6384; --town:#3fd6a0; --detective:#5db4ff; --doctor:#34c9c4; --warn:#ffb454;
+    --night:linear-gradient(135deg,#0a1130,#141c44); --day:linear-gradient(135deg,#241d44,#33264e);
+    --radius:12px;
   }
-  * { box-sizing: border-box; }
+  * { box-sizing:border-box; }
+  html,body { margin:0; height:100%; }
   body {
-    margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    background: var(--bg); color: var(--text); height: 100vh; overflow: hidden;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;
+    background:var(--bg); color:var(--text); height:100vh; overflow:hidden;
+    -webkit-font-smoothing:antialiased;
   }
+  .app { display:flex; flex-direction:column; height:100vh; }
+
+  /* ---------- header ---------- */
   header {
-    display: flex; align-items: center; gap: 14px; padding: 12px 18px;
-    background: var(--panel); border-bottom: 1px solid var(--line); flex-wrap: wrap;
+    display:flex; align-items:center; gap:16px; padding:11px 20px;
+    background:linear-gradient(180deg,#141a2c,#10151f); border-bottom:1px solid var(--line);
   }
-  header h1 { font-size: 17px; margin: 0; letter-spacing: .3px; }
-  header h1 .moon { filter: drop-shadow(0 0 6px #7c8cff88); }
-  .controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-  .controls label { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 5px; }
-  .controls input[type=number] {
-    width: 56px; background: var(--panel2); border: 1px solid var(--line); color: var(--text);
-    border-radius: 7px; padding: 5px 7px; font-size: 13px;
+  .brand { display:flex; align-items:center; gap:9px; font-weight:700; font-size:16px; letter-spacing:.2px; }
+  .brand .logo { font-size:19px; filter:drop-shadow(0 0 7px #8b9bff77); }
+  .brand small { font-weight:500; color:var(--muted); font-size:11.5px; margin-left:2px; }
+  .ctrls { display:flex; align-items:center; gap:9px; flex-wrap:wrap; }
+  .field { display:flex; align-items:center; gap:6px; font-size:11.5px; color:var(--muted); }
+  .field input {
+    background:var(--panel2); border:1px solid var(--line); color:var(--text);
+    border-radius:8px; padding:6px 8px; font-size:13px; width:52px;
   }
-  .controls input[type=text] {
-    width: 92px; background: var(--panel2); border: 1px solid var(--line); color: var(--text);
-    border-radius: 7px; padding: 5px 7px; font-size: 13px;
+  .field input.seed { width:84px; }
+  .btn {
+    background:linear-gradient(180deg,#93a0ff,#7b8bff); color:#0a0d18; border:none;
+    border-radius:9px; padding:8px 15px; font-size:13px; font-weight:700; cursor:pointer;
+    box-shadow:0 2px 10px #7b8bff44;
   }
-  button {
-    background: var(--accent); color: #0b0e18; border: none; border-radius: 8px;
-    padding: 7px 13px; font-size: 13px; font-weight: 650; cursor: pointer;
-  }
-  button.ghost { background: var(--panel2); color: var(--text); border: 1px solid var(--line); font-weight: 500; }
-  button:disabled { opacity: .45; cursor: default; }
-  .toggle { cursor: pointer; user-select: none; }
-  .spacer { flex: 1; }
+  .btn:active { transform:translateY(1px); }
+  .grow { flex:1; }
+  .switch { display:flex; align-items:center; gap:7px; font-size:12px; color:var(--muted); cursor:pointer; user-select:none; }
+  .switch input { accent-color:var(--accent); width:15px; height:15px; }
 
-  main { display: grid; grid-template-columns: 270px 1fr; height: calc(100vh - 57px); }
-  .roster { background: var(--panel); border-right: 1px solid var(--line); overflow-y: auto; padding: 14px; }
-  .roster h2 { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin: 4px 2px 12px; }
+  /* ---------- layout ---------- */
+  main { display:grid; grid-template-columns:248px 1fr 312px; flex:1; min-height:0; }
+  .col { min-height:0; display:flex; flex-direction:column; }
+  .roster { background:var(--panel); border-right:1px solid var(--line); overflow-y:auto; padding:14px 12px; }
+  .beliefs { background:var(--panel); border-left:1px solid var(--line); overflow-y:auto; padding:14px; }
+  .secttl { font-size:10.5px; text-transform:uppercase; letter-spacing:1.3px; color:var(--muted); margin:2px 4px 11px; font-weight:700; }
+
+  /* ---------- roster ---------- */
   .pcard {
-    display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 11px;
-    background: var(--panel2); margin-bottom: 8px; border: 1px solid transparent; transition: .25s;
+    display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:12px;
+    background:var(--panel2); margin-bottom:7px; border:1px solid transparent; transition:.2s;
   }
-  .pcard.dead { opacity: .42; filter: grayscale(.6); }
-  .pcard.speaking { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent), 0 0 18px #7c8cff44; }
-  .avatar {
-    width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center;
-    font-weight: 700; font-size: 15px; color: #0b0e18; flex-shrink: 0;
-  }
-  .pname { font-size: 14px; font-weight: 600; }
-  .prole { font-size: 11px; color: var(--muted); margin-top: 1px; }
-  .badge { font-size: 10px; padding: 1px 7px; border-radius: 20px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; }
-  .b-mafia { background: #ff5c7a22; color: var(--mafia); }
-  .b-town { background: #43d39e22; color: var(--town); }
-  .b-detective { background: #5db0ff22; color: var(--detective); }
-  .b-doctor { background: #36c7c222; color: var(--doctor); }
-  .b-unknown { background: #ffffff14; color: var(--muted); }
-  .skull { margin-left: auto; font-size: 14px; }
+  .pcard.dead { opacity:.4; filter:grayscale(.7); }
+  .pcard.speaking { border-color:var(--accent); box-shadow:0 0 0 1px var(--accent),0 0 22px #8b9bff33; transform:translateX(2px); }
+  .avatar { width:34px; height:34px; border-radius:50%; display:grid; place-items:center; font-weight:800; font-size:14px; color:#0a0d18; flex-shrink:0; }
+  .pmeta { min-width:0; flex:1; }
+  .pname { font-size:13.5px; font-weight:650; }
+  .prole { margin-top:2px; }
+  .badge { font-size:9.5px; padding:1.5px 7px; border-radius:20px; font-weight:800; text-transform:uppercase; letter-spacing:.6px; }
+  .b-mafia{background:#ff638422;color:var(--mafia);} .b-town{background:#3fd6a022;color:var(--town);}
+  .b-detective{background:#5db4ff22;color:var(--detective);} .b-doctor{background:#34c9c422;color:var(--doctor);}
+  .b-unknown{background:#ffffff12;color:var(--muted);}
+  .skull{font-size:13px;}
 
-  .stage { display: flex; flex-direction: column; min-width: 0; }
-  .phasebar {
-    padding: 10px 20px; display: flex; align-items: center; gap: 14px;
-    border-bottom: 1px solid var(--line); transition: background .6s; background: var(--night);
-  }
-  .phasebar.day { background: var(--day); }
-  .phase-emoji { font-size: 22px; }
-  .phase-title { font-size: 15px; font-weight: 700; }
-  .phase-sub { font-size: 12px; color: var(--muted); }
-  .winner { margin-left: auto; font-weight: 800; padding: 5px 14px; border-radius: 20px; display: none; }
-  .winner.town { background: #43d39e22; color: var(--town); display: block; }
-  .winner.mafia { background: #ff5c7a22; color: var(--mafia); display: block; }
+  /* ---------- stage ---------- */
+  .stage { background:var(--bg); }
+  .phasebar { padding:11px 22px; display:flex; align-items:center; gap:13px; border-bottom:1px solid var(--line); background:var(--night); transition:background .7s; }
+  .phasebar.day { background:var(--day); }
+  .pemoji { font-size:21px; }
+  .ptitle { font-size:14.5px; font-weight:700; }
+  .psub { font-size:11.5px; color:var(--muted); }
+  .winnerTag { margin-left:auto; font-weight:800; padding:5px 14px; border-radius:20px; font-size:12.5px; display:none; }
+  .winnerTag.town{background:#3fd6a022;color:var(--town);display:block;} .winnerTag.mafia{background:#ff638422;color:var(--mafia);display:block;}
 
-  .feed { flex: 1; overflow-y: auto; padding: 18px 22px; scroll-behavior: smooth; }
-  .ev { margin: 0 0 13px; animation: pop .35s ease; }
-  @keyframes pop { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
-  .sys {
-    text-align: center; color: var(--muted); font-size: 12.5px; margin: 16px 0;
-    display: flex; align-items: center; gap: 10px; justify-content: center;
-  }
-  .sys::before, .sys::after { content: ""; height: 1px; background: var(--line); flex: 1; max-width: 90px; }
-  .sys.kill { color: var(--mafia); font-weight: 600; }
-  .sys.save { color: var(--town); font-weight: 600; }
-  .sys.elim { color: #ffb454; font-weight: 600; }
-  .sys.win { color: var(--town); font-size: 16px; font-weight: 800; }
-  .chat { display: flex; gap: 10px; align-items: flex-start; }
-  .bubble { background: var(--panel2); border: 1px solid var(--line); border-radius: 4px 14px 14px 14px; padding: 9px 13px; max-width: 680px; }
-  .bubble .who { font-size: 12.5px; font-weight: 700; margin-bottom: 2px; }
-  .bubble .txt { font-size: 14px; line-height: 1.45; }
-  .vote { font-size: 13px; color: var(--detective); display: flex; align-items: center; gap: 7px; padding-left: 46px; }
-  .think { font-size: 12px; color: var(--muted); font-style: italic; padding-left: 46px; margin-top: 2px; }
-  .night-act { font-size: 12.5px; color: #b39ddb; padding-left: 8px; }
+  .feed { flex:1; overflow-y:auto; padding:18px 24px; }
+  .ev { margin:0 0 12px; animation:pop .32s ease; }
+  @keyframes pop { from{opacity:0;transform:translateY(6px);} to{opacity:1;transform:none;} }
+  .sys { text-align:center; color:var(--muted); font-size:12px; margin:15px 0; display:flex; align-items:center; gap:10px; justify-content:center; }
+  .sys::before,.sys::after { content:""; height:1px; background:var(--line); flex:1; max-width:80px; }
+  .sys.kill{color:var(--mafia);font-weight:600;} .sys.save{color:var(--town);font-weight:600;}
+  .sys.elim{color:var(--warn);font-weight:600;} .sys.win{color:var(--town);font-size:15px;font-weight:800;}
+  .chat { display:flex; gap:10px; align-items:flex-start; }
+  .bubble { background:var(--panel2); border:1px solid var(--line); border-radius:5px 14px 14px 14px; padding:9px 13px; max-width:660px; }
+  .bubble .who { font-size:12px; font-weight:700; margin-bottom:2px; }
+  .bubble .txt { font-size:13.5px; line-height:1.45; }
+  .vote { font-size:12.5px; color:var(--detective); padding-left:44px; }
+  .vote .cite { display:block; color:var(--muted); font-size:11.5px; font-style:italic; margin-top:2px; padding-left:18px; }
+  .think { font-size:11.5px; color:var(--muted); font-style:italic; padding-left:44px; margin-top:2px; }
+  .nact { font-size:12px; color:#b6a3e6; padding-left:6px; }
 
-  .playbar {
-    display: flex; align-items: center; gap: 14px; padding: 11px 20px;
-    border-top: 1px solid var(--line); background: var(--panel);
-  }
-  .playbar .prog { flex: 1; height: 6px; background: var(--panel2); border-radius: 6px; overflow: hidden; }
-  .playbar .prog > div { height: 100%; background: var(--accent); width: 0; transition: width .2s; }
-  .playbar .count { font-size: 12px; color: var(--muted); min-width: 70px; text-align: right; }
-  .speed { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
-  .iconbtn { background: var(--panel2); border: 1px solid var(--line); color: var(--text); width: 36px; height: 32px; border-radius: 8px; font-size: 14px; padding: 0; }
-  .loading { text-align: center; color: var(--muted); margin-top: 40px; font-size: 14px; }
-  .err { color: var(--mafia); text-align: center; margin-top: 40px; }
+  /* ---------- playbar ---------- */
+  .playbar { display:flex; align-items:center; gap:12px; padding:10px 22px; border-top:1px solid var(--line); background:var(--panel); }
+  .icon { background:var(--panel2); border:1px solid var(--line); color:var(--text); width:36px; height:31px; border-radius:8px; font-size:13px; padding:0; cursor:pointer; }
+  .icon:hover { border-color:var(--accent); }
+  .speed { display:flex; align-items:center; gap:7px; font-size:11.5px; color:var(--muted); }
+  .speed input { accent-color:var(--accent); }
+  .prog { flex:1; height:6px; background:var(--panel2); border-radius:6px; overflow:hidden; }
+  .prog>div { height:100%; background:linear-gradient(90deg,#7b8bff,#34c9c4); width:0; transition:width .15s; }
+  .count { font-size:11.5px; color:var(--muted); min-width:64px; text-align:right; font-variant-numeric:tabular-nums; }
+
+  /* ---------- beliefs dashboard ---------- */
+  .obsrow { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+  select { background:var(--panel2); border:1px solid var(--line); color:var(--text); border-radius:8px; padding:6px 8px; font-size:12.5px; flex:1; }
+  .belief-trigger { font-size:11px; color:var(--muted); margin:0 2px 12px; min-height:14px; }
+  .brow { margin-bottom:9px; }
+  .brow .lbl { display:flex; justify-content:space-between; font-size:12px; margin-bottom:3px; }
+  .brow .lbl .nm { font-weight:600; }
+  .brow .lbl .vl { color:var(--muted); font-variant-numeric:tabular-nums; }
+  .bar { height:8px; border-radius:6px; background:var(--panel2); overflow:hidden; }
+  .bar>div { height:100%; border-radius:6px; transition:width .35s ease, background .3s; }
+  .hint { font-size:11px; color:var(--muted); line-height:1.5; }
+
+  .mcard { background:var(--panel2); border:1px solid var(--line); border-radius:12px; padding:12px 13px; margin-top:16px; }
+  .mcard h3 { margin:0 0 9px; font-size:11px; text-transform:uppercase; letter-spacing:1px; color:var(--muted); }
+  .mrow { display:flex; justify-content:space-between; font-size:12.5px; padding:3px 0; }
+  .mrow .v { font-weight:700; font-variant-numeric:tabular-nums; }
+  .mrow .v.good{color:var(--town);} .mrow .v.bad{color:var(--mafia);} .mrow .v.mid{color:var(--warn);}
+  .mgroup { font-size:10px; text-transform:uppercase; letter-spacing:.8px; color:var(--faint); margin:9px 0 2px; }
+
+  .loading,.err { text-align:center; color:var(--muted); margin-top:50px; font-size:13.5px; }
+  .err { color:var(--mafia); }
+
+  /* responsive: drop side panels on narrow viewports rather than squishing */
+  @media (max-width:1080px){ main{grid-template-columns:240px 1fr;} .beliefs{display:none;} }
+  @media (max-width:820px){ main{grid-template-columns:1fr;} .roster{display:none;} }
 </style>
 </head>
 <body>
-<header>
-  <h1><span class="moon">🌙</span> Mafia Arena</h1>
-  <div class="controls">
-    <label>Players <input id="players" type="number" min="5" max="12" value="7" /></label>
-    <label>Rounds <input id="rounds" type="number" min="0" max="5" value="2" /></label>
-    <label>Seed <input id="seed" type="text" value="random" /></label>
-    <button id="newgame">▶ New Game</button>
-  </div>
-  <div class="spacer"></div>
-  <label class="toggle"><input type="checkbox" id="godmode" /> 👁 God mode (roles · night · thoughts)</label>
-</header>
+<div class="app">
+  <header>
+    <div class="brand"><span class="logo">🌙</span> Mafia Arena <small>LLM social-deduction benchmark</small></div>
+    <div class="ctrls">
+      <span class="field">Players <input id="players" type="number" min="5" max="12" value="7" /></span>
+      <span class="field">Rounds <input id="rounds" type="number" min="0" max="5" value="2" /></span>
+      <span class="field">Seed <input id="seed" class="seed" type="text" value="random" /></span>
+      <button class="btn" id="newgame">▶ New Game</button>
+    </div>
+    <div class="grow"></div>
+    <label class="switch"><input type="checkbox" id="godmode" /> 👁 God mode</label>
+  </header>
 
-<main>
-  <aside class="roster">
-    <h2>Players</h2>
-    <div id="roster"></div>
-  </aside>
+  <main>
+    <!-- roster -->
+    <aside class="roster col">
+      <div class="secttl">Players</div>
+      <div id="roster"></div>
+    </aside>
 
-  <section class="stage">
-    <div class="phasebar" id="phasebar">
-      <span class="phase-emoji" id="phaseEmoji">🌙</span>
-      <div>
-        <div class="phase-title" id="phaseTitle">Press “New Game” to begin</div>
-        <div class="phase-sub" id="phaseSub">Every player is an LLM agent. Watch them deceive and deduce.</div>
+    <!-- stage -->
+    <section class="stage col">
+      <div class="phasebar" id="phasebar">
+        <span class="pemoji" id="pemoji">🌙</span>
+        <div><div class="ptitle" id="ptitle">Press “New Game”</div><div class="psub" id="psub">Every player is an LLM agent.</div></div>
+        <div class="winnerTag" id="winnerTag"></div>
       </div>
-      <div class="winner" id="winner"></div>
-    </div>
-
-    <div class="feed" id="feed">
-      <div class="loading">Configure a table above and hit <b>New Game</b>.</div>
-    </div>
-
-    <div class="playbar">
-      <button class="iconbtn" id="restart" title="Restart">⏮</button>
-      <button class="iconbtn" id="stepback" title="Step back">⏪</button>
-      <button class="iconbtn" id="playpause" title="Play / Pause">⏸</button>
-      <button class="iconbtn" id="stepfwd" title="Step forward">⏩</button>
-      <div class="speed">Speed
-        <input id="speed" type="range" min="1" max="10" value="5" />
+      <div class="feed" id="feed"><div class="loading">Configure a table and hit <b>New Game</b>.</div></div>
+      <div class="playbar">
+        <button class="icon" id="restart" title="Restart (R)">⏮</button>
+        <button class="icon" id="stepback" title="Back (←)">⏪</button>
+        <button class="icon" id="playpause" title="Play/Pause (Space)">⏸</button>
+        <button class="icon" id="stepfwd" title="Forward (→)">⏩</button>
+        <span class="speed">🐢<input id="speed" type="range" min="1" max="10" value="3" />🐇</span>
+        <div class="prog"><div id="progbar"></div></div>
+        <div class="count" id="count">0 / 0</div>
       </div>
-      <div class="prog"><div id="progbar"></div></div>
-      <div class="count" id="count">0 / 0</div>
-    </div>
-  </section>
-</main>
+    </section>
+
+    <!-- beliefs dashboard -->
+    <aside class="beliefs col">
+      <div class="secttl">Belief Dashboard</div>
+      <div class="obsrow">
+        <select id="observer"></select>
+      </div>
+      <div class="belief-trigger" id="beliefTrigger"></div>
+      <div id="beliefBars"></div>
+      <div class="hint" id="beliefHint">Suspicion each agent holds, updated after every speech, vote, and night. Pick an observer above; “Town consensus” averages all living townsfolk.</div>
+      <div id="metricsCard"></div>
+    </aside>
+  </main>
+</div>
 
 <script>
-const AV_COLORS = ["#7c8cff","#43d39e","#ff5c7a","#ffb454","#5db0ff","#36c7c2","#c792ea","#f78c6c","#82aaff","#c3e88d","#ff9cac","#89ddff"];
-const ROLE_BADGE = { mafia:"b-mafia", villager:"b-town", detective:"b-detective", doctor:"b-doctor" };
-const $ = id => document.getElementById(id);
+const AV=["#7b8bff","#3fd6a0","#ff6384","#ffb454","#5db4ff","#34c9c4","#c792ea","#f78c6c","#82aaff","#c3e88d","#ff9cac","#89ddff"];
+const RBADGE={mafia:"b-mafia",villager:"b-town",detective:"b-detective",doctor:"b-doctor"};
+const $=id=>document.getElementById(id);
+let GAME=null, STEPS=[], idx=0, timer=null, playing=false;
 
-let GAME = null;       // raw payload
-let STEPS = [];        // events shown under current mode
-let idx = 0;           // how many steps revealed
-let timer = null;
-let playing = false;
-
-function avatarColor(name){ let h=0; for(const c of name) h=(h*31+c.charCodeAt(0))>>>0; return AV_COLORS[h%AV_COLORS.length]; }
-function godMode(){ return $("godmode").checked; }
-
-function visibleUnderMode(ev){
-  const god = godMode();
-  if (["reasoning"].includes(ev.type)) return god;
-  if (["investigation","night_action"].includes(ev.type)) return god;
-  return true; // game_start, night_start, day_start, kill, save, speech, vote, elimination, game_over
+function avColor(n){let h=0;for(const c of n)h=(h*31+c.charCodeAt(0))>>>0;return AV[h%AV.length];}
+function god(){return $("godmode").checked;}
+function esc(s){return (s||"").replace(/[&<>]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[m]));}
+function visible(e){
+  if (["reasoning","investigation","night_action"].includes(e.type)) return god();
+  return true;
 }
-
-function rebuildSteps(preserveRatio){
-  const ratio = STEPS.length ? idx / STEPS.length : 1;
-  STEPS = GAME.events.filter(visibleUnderMode);
-  idx = preserveRatio ? Math.round(ratio * STEPS.length) : STEPS.length;
+function rebuild(keep){
+  const r = STEPS.length? idx/STEPS.length : 1;
+  STEPS = GAME.events.filter(visible);
+  idx = keep? Math.round(r*STEPS.length) : STEPS.length;
   render();
 }
 
-// ---- state reconstruction up to current idx ----
+/* ---- reconstruct visible state at idx ---- */
+function rawCountAt(n){ return n>0 ? (STEPS[n-1]._i + 1) : 0; }
 function stateAt(n){
-  const dead = {}, revealed = {};
-  let day = 0, phase = "night", speaking = null, winner = null;
-  for (let i=0;i<n;i++){
-    const e = STEPS[i];
-    if (e.day) day = e.day;
-    if (e.phase) phase = e.phase;
-    if (e.type==="kill" || e.type==="elimination"){ dead[e.target]=true; revealed[e.target]=e.meta && e.meta.role; }
-    if (e.type==="speech" || e.type==="vote") speaking = e.actor; else if (["night_start","day_start","kill","elimination"].includes(e.type)) speaking=null;
-    if (e.type==="game_over"){ winner = e.meta && e.meta.winner; }
+  const dead={},revealed={}; let day=0,phase="night",speaking=null,winner=null;
+  for (let i=0;i<n;i++){ const e=STEPS[i];
+    if(e.day)day=e.day; if(e.phase)phase=e.phase;
+    if(e.type==="kill"||e.type==="elimination"){dead[e.target]=1;revealed[e.target]=e.meta&&e.meta.role;}
+    if(e.type==="speech"||e.type==="vote")speaking=e.actor;
+    else if(["night_start","day_start","kill","elimination","game_over"].includes(e.type))speaking=null;
+    if(e.type==="game_over")winner=e.meta&&e.meta.winner;
   }
-  return { dead, revealed, day, phase, speaking, winner };
+  return {dead,revealed,day,phase,speaking,winner};
 }
 
 function renderRoster(st){
-  const wrap = $("roster"); wrap.innerHTML="";
-  for (const p of GAME.players){
-    const dead = st.dead[p.name];
-    const showRole = godMode() || dead || st.winner;
-    const role = p.role;
-    const div = document.createElement("div");
-    div.className = "pcard" + (dead?" dead":"") + (st.speaking===p.name && !dead?" speaking":"");
-    const badgeClass = showRole ? (ROLE_BADGE[role]||"b-unknown") : "b-unknown";
-    const badgeText = showRole ? role : "???";
-    div.innerHTML = `
-      <div class="avatar" style="background:${avatarColor(p.name)}">${p.name[0]}</div>
-      <div style="min-width:0">
-        <div class="pname">${p.name}</div>
-        <div class="prole"><span class="badge ${badgeClass}">${badgeText}</span></div>
-      </div>
+  const w=$("roster"); w.innerHTML="";
+  for(const p of GAME.players){
+    const dead=st.dead[p.name]; const show=god()||dead||st.winner;
+    const bc=show?(RBADGE[p.role]||"b-unknown"):"b-unknown"; const bt=show?p.role:"???";
+    const d=document.createElement("div");
+    d.className="pcard"+(dead?" dead":"")+(st.speaking===p.name&&!dead?" speaking":"");
+    d.innerHTML=`<div class="avatar" style="background:${avColor(p.name)}">${p.name[0]}</div>
+      <div class="pmeta"><div class="pname">${p.name}</div>
+      <div class="prole"><span class="badge ${bc}">${bt}</span></div></div>
       ${dead?'<span class="skull">💀</span>':''}`;
-    wrap.appendChild(div);
+    w.appendChild(d);
   }
 }
-
 function renderPhase(st){
-  const bar = $("phasebar"); const isDay = st.phase && st.phase.startsWith("day");
-  bar.classList.toggle("day", isDay);
-  $("phaseEmoji").textContent = st.winner ? "🏁" : (isDay ? "☀️" : "🌙");
-  if (st.winner){
-    $("phaseTitle").textContent = "Game over";
-    $("phaseSub").textContent = "";
-  } else {
-    $("phaseTitle").textContent = (isDay?"Day ":"Night ") + (st.day||1);
-    $("phaseSub").textContent = isDay ? "Discussion & voting" : "Secret night actions";
-  }
-  const w = $("winner");
-  w.className = "winner" + (st.winner?(" "+st.winner):"");
-  w.textContent = st.winner ? (st.winner.toUpperCase()+" WIN") : "";
+  const bar=$("phasebar"), isDay=st.phase&&st.phase.startsWith("day");
+  bar.classList.toggle("day",isDay);
+  $("pemoji").textContent=st.winner?"🏁":(isDay?"☀️":"🌙");
+  if(st.winner){$("ptitle").textContent="Game over";$("psub").textContent="";}
+  else{$("ptitle").textContent=(isDay?"Day ":"Night ")+(st.day||1);
+       $("psub").textContent=isDay?"Discussion & voting":"Secret night actions";}
+  const w=$("winnerTag"); w.className="winnerTag"+(st.winner?" "+st.winner:""); w.textContent=st.winner?st.winner.toUpperCase()+" WIN":"";
 }
-
-function eventHTML(e){
+function evHTML(e){
   switch(e.type){
-    case "game_start": return `<div class="sys">${e.content}</div>`;
+    case "game_start": return `<div class="sys">${esc(e.content)}</div>`;
     case "night_start": return `<div class="sys">🌙 Night ${e.day} — the town sleeps</div>`;
-    case "day_start": return `<div class="sys">☀️ Day ${e.day} — ${e.content}</div>`;
+    case "day_start": return `<div class="sys">☀️ Day ${e.day} — ${esc(e.content)}</div>`;
     case "kill": return `<div class="sys kill">💀 ${e.target} was killed in the night${e.meta&&e.meta.role?` — was <b>${e.meta.role}</b>`:""}</div>`;
     case "save": return `<div class="sys save">🛡️ The mafia struck, but the doctor saved the target!</div>`;
     case "elimination": return `<div class="sys elim">⚖️ ${e.target} was voted out${e.meta&&e.meta.role?` — was <b>${e.meta.role}</b>`:""}</div>`;
-    case "game_over": return `<div class="sys win">🏁 ${e.content}</div>`;
-    case "investigation": return `<div class="night-act">🔎 <b>${e.actor}</b> investigated ${e.target}: <b>${(e.meta&&e.meta.faction||"?").toUpperCase()}</b></div>`;
-    case "night_action": {
-      const kind = e.meta && e.meta.kind || "acts";
-      const label = kind==="kill_vote" ? "🔪 targets" : (kind==="protect" ? "🛡️ protects" : "acts on");
-      return `<div class="night-act">• <b>${e.actor}</b> ${label} ${e.target}</div>`;
+    case "game_over": return `<div class="sys win">🏁 ${esc(e.content)}</div>`;
+    case "investigation": return `<div class="nact">🔎 <b>${e.actor}</b> investigated ${e.target}: <b>${(e.meta&&e.meta.faction||"?").toUpperCase()}</b></div>`;
+    case "night_action": { const k=e.meta&&e.meta.kind||""; const lab=k==="kill_vote"?"🔪 targets":(k==="protect"?"🛡️ protects":"acts on"); return `<div class="nact">• <b>${e.actor}</b> ${lab} ${e.target}</div>`; }
+    case "reasoning": return `<div class="think">💭 ${e.actor}: ${esc(e.content)}</div>`;
+    case "speech": { const c=avColor(e.actor); return `<div class="chat"><div class="avatar" style="background:${c}">${e.actor[0]}</div><div class="bubble"><div class="who" style="color:${c}">${e.actor}</div><div class="txt">${esc(e.content)}</div></div></div>`; }
+    case "vote": {
+      const cites=(e.meta&&e.meta.citations)||[];
+      const c = cites.length? cites.map(x=>`<span class="cite">↳ ${esc(x)}</span>`).join("") : "";
+      return `<div class="vote">🗳️ <b>${e.actor}</b> votes <b>${e.target}</b>${c}</div>`;
     }
-    case "reasoning": return `<div class="think">💭 ${e.actor} thinks: ${esc(e.content)}</div>`;
-    case "speech": {
-      const c = avatarColor(e.actor);
-      return `<div class="chat">
-        <div class="avatar" style="background:${c}">${e.actor[0]}</div>
-        <div class="bubble"><div class="who" style="color:${c}">${e.actor}</div><div class="txt">${esc(e.content)}</div></div>
-      </div>`;
-    }
-    case "vote": return `<div class="vote">🗳️ <b>${e.actor}</b> votes for <b>${e.target}</b></div>`;
     default: return "";
   }
 }
-function esc(s){ return (s||"").replace(/[&<>]/g, m=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[m])); }
 
-function render(){
-  if (!GAME) return;
-  const st = stateAt(idx);
-  renderRoster(st);
-  renderPhase(st);
-  const feed = $("feed"); feed.innerHTML="";
-  for (let i=0;i<idx;i++){
-    const html = eventHTML(STEPS[i]);
-    if (html){ const d=document.createElement("div"); d.className="ev"; d.innerHTML=html; feed.appendChild(d); }
+/* ---- belief dashboard ---- */
+function beliefAt(rawCount){
+  if(!GAME.beliefs||!GAME.beliefs.length) return null;
+  let last=null;
+  for(const b of GAME.beliefs){ if(b.i<=rawCount) last=b; else break; }
+  return last;
+}
+function renderBeliefs(st){
+  const bars=$("beliefBars"), trg=$("beliefTrigger");
+  const snap=beliefAt(rawCountAt(idx));
+  if(!snap){ bars.innerHTML=""; trg.textContent=""; return; }
+  trg.textContent="after: "+snap.trigger;
+  const obs=$("observer").value;
+  const living=GAME.players.map(p=>p.name).filter(n=>!st.dead[n]);
+  // build subject -> score for chosen observer (or town consensus)
+  let vec={};
+  if(obs==="__town__"){
+    const observers=living.filter(n=>{const p=GAME.players.find(x=>x.name===n);return p.role!=="mafia"||god()?true:true;});
+    // average over all living observers present in snapshot
+    const present=Object.keys(snap.beliefs);
+    for(const o of present){ for(const [s,v] of Object.entries(snap.beliefs[o])){ if(st.dead[s])continue; vec[s]=(vec[s]||0)+v; } }
+    const n=present.length||1; for(const k in vec) vec[k]/=n;
+  } else if(snap.beliefs[obs]){
+    for(const [s,v] of Object.entries(snap.beliefs[obs])){ if(!st.dead[s]) vec[s]=v; }
   }
-  feed.scrollTop = feed.scrollHeight;
-  $("count").textContent = `${idx} / ${STEPS.length}`;
-  $("progbar").style.width = (STEPS.length? (idx/STEPS.length*100):0) + "%";
-  $("playpause").textContent = playing ? "⏸" : "▶";
+  const entries=Object.entries(vec).filter(([s])=>s!==obs).sort((a,b)=>b[1]-a[1]);
+  const max=Math.max(0.001,...entries.map(([,v])=>Math.max(0,v)));
+  bars.innerHTML = entries.map(([s,v])=>{
+    const pos=Math.max(0,v); const w=Math.round(pos/max*100);
+    const col = v<0? "var(--town)" : (w>66?"var(--mafia)":w>33?"var(--warn)":"var(--detective)");
+    const disp = v<0? "cleared" : v.toFixed(1);
+    return `<div class="brow"><div class="lbl"><span class="nm" style="color:${avColor(s)}">${s}</span><span class="vl">${disp}</span></div>
+      <div class="bar"><div style="width:${v<0?100:w}%;background:${col};opacity:${v<0?.35:1}"></div></div></div>`;
+  }).join("") || `<div class="hint">No live suspicion data at this point.</div>`;
 }
 
-function stepForward(){ if (idx < STEPS.length){ idx++; render(); } else pause(); }
-function stepBack(){ if (idx>0){ idx--; render(); } }
-function restart(){ idx=0; render(); }
+function pctClass(x,goodHigh=true){ if(x==null)return""; const g=goodHigh?x>=.6:x<=.4; const b=goodHigh?x<=.35:x>=.65; return g?"good":b?"bad":"mid"; }
+function renderMetrics(st){
+  const card=$("metricsCard");
+  if(!st.winner||!GAME.metrics){ card.innerHTML=""; return; }
+  const m=GAME.metrics; const P=x=>x==null?"n/a":Math.round(x*100)+"%";
+  const row=(label,val,goodHigh=true)=>`<div class="mrow"><span>${label}</span><span class="v ${pctClass(val,goodHigh)}">${P(val)}</span></div>`;
+  card.innerHTML=`<div class="mcard"><h3>Game metrics</h3>
+    <div class="mgroup">Detection · town</div>
+    ${row("Town vote accuracy",m.town_vote_accuracy)}
+    ${row("Elimination accuracy",m.elimination_accuracy)}
+    ${row("Detective value",m.detective_value)}
+    <div class="mgroup">Deception · mafia</div>
+    ${row("Deception index",m.deception_index,false)}
+    ${row("Alibi consistency",m.mafia_consistency)}
+    <div class="mgroup">Reasoning quality</div>
+    ${row("Evidence-based votes",m.evidence_vote_rate)}
+    ${row("Citation grounding",m.citation_grounding)}
+  </div>`;
+}
 
-function play(){ if (!GAME || idx>=STEPS.length){ idx=0; } playing=true; schedule(); render(); }
-function pause(){ playing=false; if (timer) clearTimeout(timer); timer=null; render(); }
-function togglePlay(){ playing ? pause() : play(); }
-function schedule(){
-  if (!playing) return;
-  if (timer) clearTimeout(timer);
-  const sp = +$("speed").value;          // 1..10
-  const delay = 1300 - sp*115;            // ~185ms (fast) .. 1185ms (slow)
-  timer = setTimeout(()=>{
-    if (idx < STEPS.length){ idx++; render(); schedule(); } else pause();
-  }, Math.max(120, delay));
+function render(){
+  if(!GAME)return;
+  const st=stateAt(idx);
+  renderRoster(st); renderPhase(st);
+  const feed=$("feed"); const near=feed.scrollHeight-feed.scrollTop-feed.clientHeight<90;
+  feed.innerHTML="";
+  for(let i=0;i<idx;i++){ const h=evHTML(STEPS[i]); if(h){const d=document.createElement("div");d.className="ev";d.innerHTML=h;feed.appendChild(d);} }
+  if(near) feed.scrollTop=feed.scrollHeight;
+  renderBeliefs(st); renderMetrics(st);
+  $("count").textContent=`${idx} / ${STEPS.length}`;
+  $("progbar").style.width=(STEPS.length?idx/STEPS.length*100:0)+"%";
+  $("playpause").textContent=playing?"⏸":"▶";
+}
+
+/* ---- playback ---- */
+function stepF(){ if(idx<STEPS.length){idx++;render();} else pause(); }
+function stepB(){ if(idx>0){idx--;render();} }
+function restart(){ idx=0; render(); }
+function play(){ if(!GAME||idx>=STEPS.length)idx=0; playing=true; schedule(); render(); }
+function pause(){ playing=false; if(timer)clearTimeout(timer); timer=null; render(); }
+function toggle(){ playing?pause():play(); }
+function schedule(){ if(!playing)return; if(timer)clearTimeout(timer);
+  const sp=+$("speed").value; const delay=Math.max(280,1900-sp*160);
+  timer=setTimeout(()=>{ if(idx<STEPS.length){idx++;render();schedule();} else pause(); }, delay);
+}
+
+function fillObservers(){
+  const sel=$("observer"); sel.innerHTML="";
+  const o=document.createElement("option"); o.value="__town__"; o.textContent="Town consensus"; sel.appendChild(o);
+  for(const p of GAME.players){ const op=document.createElement("option"); op.value=p.name; op.textContent=p.name+"’s view"; sel.appendChild(op); }
 }
 
 async function newGame(){
   pause();
-  const players = $("players").value, rounds = $("rounds").value, seed = $("seed").value.trim();
-  $("feed").innerHTML = `<div class="loading">Running game… the agents are deliberating.</div>`;
-  $("phaseTitle").textContent = "Loading…";
-  try {
-    const qs = new URLSearchParams({ players, rounds, provider:"mock" });
-    if (seed && seed!=="random") qs.set("seed", seed);
-    const res = await fetch("/api/game?"+qs.toString());
-    const data = await res.json();
-    if (data.error){ $("feed").innerHTML = `<div class="err">Error: ${esc(data.error)}</div>`; return; }
-    GAME = data;
-    STEPS = GAME.events.filter(visibleUnderMode);
-    idx = 0; render();
-    play();   // auto-play the new game
-  } catch (e){
-    $("feed").innerHTML = `<div class="err">Could not reach the server. Is it running?</div>`;
-  }
+  const players=$("players").value, rounds=$("rounds").value, seed=$("seed").value.trim();
+  $("feed").innerHTML=`<div class="loading">Running game… the agents are deliberating.</div>`;
+  $("ptitle").textContent="Loading…"; $("beliefBars").innerHTML=""; $("metricsCard").innerHTML="";
+  try{
+    const qs=new URLSearchParams({players,rounds,provider:"mock"});
+    if(seed&&seed!=="random") qs.set("seed",seed);
+    const res=await fetch("/api/game?"+qs.toString()); const data=await res.json();
+    if(data.error){ $("feed").innerHTML=`<div class="err">Error: ${esc(data.error)}</div>`; return; }
+    GAME=data; GAME.events.forEach((e,i)=>e._i=i);
+    fillObservers();
+    STEPS=GAME.events.filter(visible); idx=0; render(); play();
+  }catch(e){ $("feed").innerHTML=`<div class="err">Could not reach the server. Is <code>python -m mafia serve</code> running?</div>`; }
 }
 
-// wiring
-$("newgame").onclick = newGame;
-$("playpause").onclick = togglePlay;
-$("stepfwd").onclick = ()=>{ pause(); stepForward(); };
-$("stepback").onclick = ()=>{ pause(); stepBack(); };
-$("restart").onclick = ()=>{ pause(); restart(); };
-$("speed").oninput = ()=>{ if (playing) schedule(); };
-$("godmode").onchange = ()=>{ if (GAME) rebuildSteps(true); };
-window.addEventListener("keydown", e=>{
-  if (e.code==="Space"){ e.preventDefault(); togglePlay(); }
-  else if (e.code==="ArrowRight"){ pause(); stepForward(); }
-  else if (e.code==="ArrowLeft"){ pause(); stepBack(); }
+$("newgame").onclick=newGame;
+$("playpause").onclick=toggle;
+$("stepfwd").onclick=()=>{pause();stepF();};
+$("stepback").onclick=()=>{pause();stepB();};
+$("restart").onclick=()=>{pause();restart();};
+$("speed").oninput=()=>{ if(playing)schedule(); };
+$("godmode").onchange=()=>{ if(GAME)rebuild(true); };
+$("observer").onchange=()=>{ if(GAME)render(); };
+window.addEventListener("keydown",e=>{
+  if(e.target.tagName==="INPUT"||e.target.tagName==="SELECT")return;
+  if(e.code==="Space"){e.preventDefault();toggle();}
+  else if(e.code==="ArrowRight"){pause();stepF();}
+  else if(e.code==="ArrowLeft"){pause();stepB();}
+  else if(e.key==="r"||e.key==="R"){pause();restart();}
 });
-
-// auto-start one game on load
 newGame();
 </script>
 </body>

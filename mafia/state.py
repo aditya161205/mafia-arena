@@ -107,6 +107,10 @@ class GameState:
     events: list[Event] = field(default_factory=list)
     winner: Faction | None = None
     config: dict = field(default_factory=dict)
+    # Belief snapshots: each entry records every living agent's suspicion vector
+    # at a point in the game, keyed to the event index so the UI/analysis can
+    # replay how beliefs evolved. Populated by the engine; not part of agent memory.
+    beliefs: list[dict] = field(default_factory=list)
 
     # ----------------------------------------------------------------- queries
     def player(self, name: str) -> Player:

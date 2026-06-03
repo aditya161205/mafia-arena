@@ -17,6 +17,7 @@ class Action:
     reasoning: str = ""
     message: str = ""
     target: str | None = None
+    citations: list[str] = field(default_factory=list)
     raw: str = ""
 
 
@@ -98,6 +99,18 @@ class Agent:
                 scores[name] += 5.0 if faction == Faction.MAFIA.value else -5.0
         return scores
 
+    def evidence(self, state: GameState) -> list[dict]:
+        """Concrete prior actions this agent can cite when justifying a vote."""
+        living = set(state.living_names())
+        items: list[dict] = []
+        for e in state.visible_events(self.name):
+            if e.actor and e.actor in living and e.target in living and e.actor != self.name:
+                if e.type is EventType.VOTE:
+                    items.append({"actor": e.actor, "target": e.target, "day": e.day, "kind": "voted"})
+                elif e.type is EventType.SPEECH and e.target:
+                    items.append({"actor": e.actor, "target": e.target, "day": e.day, "kind": "accused"})
+        return items[-12:]
+
     # ------------------------------------------------------------------ acting
     def _recent_social(self, state: GameState) -> dict:
         """Lightweight social signals used for richer mock dialogue.
@@ -133,6 +146,7 @@ class Agent:
             "suspicions": self.suspicion_scores(state),
             "known_factions": self.known_factions(state),
             "day": state.day,
+            "evidence": self.evidence(state),
             **self._recent_social(state),
         }
 
@@ -188,7 +202,12 @@ class Agent:
         living = [n for n in state.living_names() if n != self.name]
         instr = (
             "Voting time. Choose exactly one living player to eliminate. "
-            f"Valid targets: {', '.join(living)}. Put the name in 'target'."
+            f"Valid targets: {', '.join(living)}. Put the name in 'target'. "
+            "You MUST justify your vote with concrete evidence: add a 'citations' "
+            "list of 1-3 short strings, each referencing a SPECIFIC prior statement "
+            "or vote (e.g. 'Bob voted for Carol on day 1 then defended her', "
+            "'Eve dodged my question'). Cite real events from your memory, not "
+            "invented ones."
         )
         return self._act(state, "vote", instr)
 
@@ -201,10 +220,15 @@ def _parse_action(raw: str) -> Action:
     target = obj.get("target")
     if isinstance(target, str):
         target = target.strip() or None
+    cites = obj.get("citations", [])
+    if isinstance(cites, str):
+        cites = [cites]
+    citations = [str(c).strip() for c in cites if str(c).strip()] if isinstance(cites, list) else []
     return Action(
         reasoning=str(obj.get("reasoning", "")),
         message=str(obj.get("message", "")),
         target=target if isinstance(target, str) else None,
+        citations=citations,
         raw=raw,
     )
 

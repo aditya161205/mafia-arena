@@ -169,6 +169,7 @@ class Engine:
                 content=f"{victim} was killed during the night.",
                 meta={"role": self.state.player(victim).role.value},
             ))
+        self._snapshot_beliefs("night resolved")
 
     # --------------------------------------------------------------------- day
     def run_day(self) -> None:
@@ -190,6 +191,7 @@ class Engine:
                     type=EventType.SPEECH, day=self.state.day, phase=Phase.DAY_DISCUSSION,
                     actor=name, target=act.target, content=msg,
                 ))
+                self._snapshot_beliefs(f"{name} spoke")
 
         self._run_vote()
 
@@ -207,7 +209,9 @@ class Engine:
                 self._emit(Event(
                     type=EventType.VOTE, day=self.state.day, phase=Phase.DAY_VOTE,
                     actor=name, target=target, content=act.message.strip(),
+                    meta={"citations": list(act.citations)},
                 ))
+                self._snapshot_beliefs(f"{name} voted")
 
         eliminated = self._top_choice(tally)
         if eliminated:
@@ -218,8 +222,28 @@ class Engine:
                 meta={"role": self.state.player(eliminated).role.value,
                       "votes": dict(tally)},
             ))
+        self._snapshot_beliefs("vote resolved")
 
     # ----------------------------------------------------------------- helpers
+    def _snapshot_beliefs(self, trigger: str) -> None:
+        """Record every living agent's current suspicion vector over others.
+
+        Keyed to the current event count so analysis/UI can align beliefs with the
+        moment they were held. Negative scores (e.g. detective-cleared players) are
+        kept; consumers can clamp for display.
+        """
+        beliefs: dict[str, dict[str, float]] = {}
+        for name in self.state.living_names():
+            scores = self.agents[name].suspicion_scores(self.state)
+            beliefs[name] = {k: round(v, 2) for k, v in scores.items() if k != name}
+        self.state.beliefs.append({
+            "i": len(self.state.events),
+            "day": self.state.day,
+            "phase": self.state.phase.value,
+            "trigger": trigger,
+            "beliefs": beliefs,
+        })
+
     def _record_reasoning(self, name: str, act: Action) -> None:
         if act.reasoning:
             self._emit(Event(
