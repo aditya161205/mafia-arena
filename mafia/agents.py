@@ -99,6 +99,31 @@ class Agent:
         return scores
 
     # ------------------------------------------------------------------ acting
+    def _recent_social(self, state: GameState) -> dict:
+        """Lightweight social signals used for richer mock dialogue.
+
+        Returns who has been pointing at *me* lately, the most recent death, and
+        the previous day's vote split — all derived from events I can see.
+        """
+        living = set(state.living_names())
+        accused_by: list[str] = []
+        last_dead: str | None = None
+        last_vote_split: dict[str, int] = {}
+        for e in state.visible_events(self.name):
+            if e.actor and e.actor != self.name and e.target == self.name and e.actor in living:
+                if e.type in (EventType.SPEECH, EventType.VOTE):
+                    accused_by.append(e.actor)
+            if e.type in (EventType.KILL, EventType.ELIMINATION) and e.target:
+                last_dead = e.target
+            if e.type is EventType.ELIMINATION:
+                last_vote_split = e.meta.get("votes", {}) or {}
+        # de-dup, keep order, only currently-living accusers
+        seen: list[str] = []
+        for n in accused_by:
+            if n not in seen:
+                seen.append(n)
+        return {"accused_by": seen, "last_dead": last_dead, "last_vote_split": last_vote_split}
+
     def _context(self, state: GameState, action: str) -> dict:
         return {
             "me": self.name,
@@ -108,6 +133,7 @@ class Agent:
             "suspicions": self.suspicion_scores(state),
             "known_factions": self.known_factions(state),
             "day": state.day,
+            **self._recent_social(state),
         }
 
     def _act(self, state: GameState, action: str, instruction: str) -> Action:

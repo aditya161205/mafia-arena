@@ -132,30 +132,106 @@ class MockClient:
             })
         if action == "vote":
             target = pick_suspect()
+            line = self._vote_line(target, ctx)
             return json.dumps({
-                "reasoning": f"My read says {target} is the most likely wolf.",
+                "reasoning": self._vote_reasoning(target, role, ctx),
                 "target": target,
-                "message": f"I'm voting {target} — their story doesn't add up.",
+                "message": line,
             })
         # default: a daytime speech
         target = pick_suspect()
+        line, reasoning = self._speech(target, role, ctx)
+        return json.dumps({"reasoning": reasoning, "message": line, "target": target})
+
+    # ---------------------------------------------------------- dialogue model
+    def _speech(self, target, role, ctx) -> tuple[str, str]:
+        """Produce a varied, context-aware day statement and private reasoning."""
+        me = ctx.get("me", "")
+        day = ctx.get("day", 1)
+        accusers = [a for a in ctx.get("accused_by", []) if a]
+        last_dead = ctx.get("last_dead")
+        known = ctx.get("known_factions", {})
+        pick = self._rng.choice
+
+        opener = ""
+        if last_dead and day > 1:
+            opener = pick([
+                f"Losing {last_dead} hurts. ",
+                f"Whoever killed {last_dead} made a calculated choice — ",
+                f"{last_dead}'s death tells us something. ",
+                "",
+            ])
+
+        # A detective with a confirmed wolf should consider hard-claiming.
+        if role == "detective" and known.get(target) == "mafia":
+            line = pick([
+                f"I'll say it plainly: I'm the detective, and I investigated {target} — they are mafia. Vote {target}.",
+                f"I've been holding this, but it's time: {target} came back guilty when I checked them. They're our wolf.",
+                f"Trust me or don't, but I have a read on {target} I'd stake my life on. {target} is mafia.",
+            ])
+            return line, f"I have {target} confirmed as mafia; claiming now to swing the vote before I'm killed."
+
+        # Being accused → defend, then redirect.
+        if accusers:
+            accuser = accusers[-1]
+            defense = pick([
+                f"{accuser}, pinning this on me is convenient — too convenient. ",
+                f"I find it telling that {accuser} is so eager to point at me. ",
+                f"Look, {accuser} wants you all staring at me instead of the real threat. ",
+                f"I'm town, {accuser}, and wasting a day on me is exactly what the mafia want. ",
+            ])
+            redirect = pick([
+                f"Ask yourself who benefits if I'm gone. I think it's {target}.",
+                f"Meanwhile {target} has skated by without a hard question all game.",
+                f"If you want a real suspect, watch {target} — their votes don't line up.",
+            ])
+            line = (opener + defense + redirect).strip()
+            return line, f"{accuser} is heat on me; I'll deflect and steer the table onto {target}."
+
+        # Mafia: sound reasonable, quietly bus a townie.
         if role == "mafia":
-            line = (
-                f"I've been paying close attention. {target} has been awfully quiet "
-                f"and quick to deflect — I think we should keep an eye on them."
-            )
-        elif role == "detective" and known.get(target) == "mafia":
-            line = f"I have strong reason to believe {target} is mafia. We should vote them."
-        else:
-            line = (
-                f"Nothing concrete yet, but {target}'s reasoning felt off to me. "
-                f"What does everyone else think?"
-            )
-        return json.dumps({
-            "reasoning": f"I'll steer suspicion toward {target} while sounding reasonable.",
-            "message": line,
-            "target": target,
-        })
+            line = opener + pick([
+                f"I've been watching the votes, and {target} keeps drifting toward whoever's safe. That reads wolf to me.",
+                f"Honestly? {target} has contributed nothing but vibes. Quiet players win games for the mafia.",
+                f"I could be wrong, but {target}'s reasoning earlier didn't hold together. I'd want them explaining themselves.",
+                f"Let's be disciplined. {target} is my lean — not certain, but the cleanest case we've got.",
+            ])
+            return line.strip(), f"I'll build a calm, plausible case against the townie {target} without exposing myself."
+
+        # Doctor: town-aligned, a touch protective.
+        if role == "doctor":
+            line = opener + pick([
+                f"I want to slow down before we lynch — but if pushed, {target} worries me most.",
+                f"Keep your eyes on {target}. And whoever's looking strong to the town, stay alive for us.",
+                f"My gut says {target}. Let's pressure-test them rather than rushing.",
+            ])
+            return line.strip(), f"Play like a villager, lean on {target}, and keep key town alive at night."
+
+        # Plain villager.
+        line = opener + pick([
+            f"Nothing's certain yet, but {target}'s story has a seam in it. Anyone else feel that?",
+            f"I keep coming back to {target}. Their reads are always one step behind the room.",
+            f"I'll throw a soft vote on {target} and see who rushes to defend them — that'll be informative.",
+            f"{target} is my lean. Convince me I'm wrong before we vote.",
+        ])
+        return line.strip(), f"{target} looks most suspicious to me; I'll voice it and watch the reactions."
+
+    def _vote_line(self, target, ctx) -> str:
+        if not target:
+            return "I'll abstain — nothing's clear enough."
+        return self._rng.choice([
+            f"My vote is {target}. The case is as good as it'll get today.",
+            f"I'm locking in {target}. Their story never added up for me.",
+            f"Voting {target} — and if I'm wrong, the flip tells us plenty.",
+            f"{target}. I've heard enough deflection from them.",
+        ])
+
+    def _vote_reasoning(self, target, role, ctx) -> str:
+        if role == "mafia":
+            return f"Voting {target} keeps me looking town and removes a real threat."
+        if role == "detective" and ctx.get("known_factions", {}).get(target) == "mafia":
+            return f"I confirmed {target} as mafia; this vote is correct."
+        return f"{target} is the strongest suspect on my read; committing the vote."
 
     @staticmethod
     def _extract_context(prompt: str) -> dict:
