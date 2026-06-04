@@ -190,6 +190,24 @@
 
   @media (max-width:1120px){ main.active{grid-template-columns:230px 1fr !important;} .panR{display:none;} }
   @media (max-width:840px){ main.active{grid-template-columns:1fr !important;} .panL{display:none;} }
+
+  /* how-to-play overlay */
+  .overlay{position:fixed;inset:0;background:rgba(5,7,12,.72);backdrop-filter:blur(6px);
+    display:none;align-items:center;justify-content:center;padding:28px;z-index:50;}
+  .guide{width:min(720px,96vw);max-height:88vh;display:flex;flex-direction:column;overflow:hidden;}
+  .ghead{display:flex;align-items:flex-start;gap:16px;padding:22px 26px;border-bottom:1px solid var(--line);}
+  .gtitle{font-size:19px;font-weight:750;}
+  .gsub{color:var(--muted);font-size:12.5px;margin-top:3px;}
+  .ghead .ghost{margin-left:auto;flex-shrink:0;}
+  .gbody{overflow-y:auto;padding:6px 26px 26px;}
+  .gbody h4{margin:20px 0 7px;font-size:13px;letter-spacing:.4px;color:var(--accent2);}
+  .gbody p{margin:0 0 9px;font-size:13px;line-height:1.65;color:#cfd4e6;}
+  .gbody ul,.gbody ol{margin:0 0 9px;padding-left:20px;}
+  .gbody li{font-size:13px;line-height:1.65;color:#cfd4e6;margin-bottom:4px;}
+  .gbody b{color:var(--text);}
+  .gtable{width:100%;border-collapse:collapse;margin:4px 0 6px;}
+  .gtable td{padding:7px 8px;border-bottom:1px solid var(--line);font-size:12.5px;line-height:1.5;color:#cfd4e6;vertical-align:top;}
+  .gtable td:first-child{width:96px;white-space:nowrap;}
 </style>
 </head>
 <body>
@@ -198,6 +216,7 @@
     <div class="brand"><div class="mark"></div>
       <div><div class="t">Mafia Arena</div><div class="s">LLM social-deduction benchmark</div></div></div>
     <div class="grow"></div>
+    <button class="ghost" id="guideBtn">How to play</button>
     <button class="ghost" id="homeBtn">New game</button>
   </header>
 
@@ -277,6 +296,73 @@
       <div id="pAction"></div>
     </section>
   </main>
+
+  <!-- HOW TO PLAY -->
+  <div class="overlay" id="guide">
+    <div class="guide card">
+      <div class="ghead">
+        <div><div class="gtitle">How to play Mafia</div>
+          <div class="gsub">A game of hidden roles, deception, and deduction. Read this once and you are ready.</div></div>
+        <button class="ghost" id="guideClose">Close</button>
+      </div>
+      <div class="gbody">
+        <h4>The idea</h4>
+        <p>Players are secretly split into two teams. The <b>Mafia</b> know each other and try to
+        eliminate everyone else without being caught. The <b>Town</b> does not know who anyone is and
+        must work out who the Mafia are through discussion and voting. Every other player here is an
+        AI agent.</p>
+
+        <h4>The roles</h4>
+        <table class="gtable">
+          <tr><td><span class="badge b-mafia">Mafia</span></td><td>Knows the other Mafia. Each night, the Mafia secretly pick one player to kill. By day they pretend to be Town.</td></tr>
+          <tr><td><span class="badge b-detective">Detective</span></td><td>Town. Each night, secretly learns the true team (Town or Mafia) of one player.</td></tr>
+          <tr><td><span class="badge b-doctor">Doctor</span></td><td>Town. Each night, secretly protects one player from being killed (may protect themselves).</td></tr>
+          <tr><td><span class="badge b-villager">Villager</span></td><td>Town. No special power — only reasoning, discussion, and votes.</td></tr>
+        </table>
+
+        <h4>A round, step by step</h4>
+        <ol>
+          <li><b>Night.</b> Everyone "sleeps." The Mafia choose a victim, the Detective investigates
+          someone, and the Doctor protects someone. If the Doctor protects the Mafia's target, nobody dies.</li>
+          <li><b>Day — discussion.</b> The survivors talk. Players share suspicions, defend themselves,
+          and try to build a case. This repeats for a few rounds.</li>
+          <li><b>Day — vote.</b> Everyone votes for one player to eliminate. The most-voted player is
+          removed and their role is revealed. Ties are broken at random.</li>
+        </ol>
+
+        <h4>How to win</h4>
+        <p><b>Town wins</b> when every Mafia member has been eliminated.
+        <b>Mafia win</b> when their numbers equal the Town's (at that point they can no longer be out-voted).</p>
+
+        <h4>Playing in this app</h4>
+        <p>In <b>Play</b> mode you control one seat. Your <b>role card</b> (top-left) shows your ability,
+        your secret Mafia partners if you are Mafia, and your Detective findings as you learn them. The
+        game pauses and shows you a panel at the bottom whenever it is your turn:</p>
+        <ul>
+          <li><b>Night ability</b> — pick a target for your kill / investigation / protection.</li>
+          <li><b>Speak</b> — type a message to the table; you may also point suspicion at a player.</li>
+          <li><b>Vote</b> — choose who to eliminate and add <b>evidence citations</b> (e.g. "Bob accused
+          Carol then defended her"). Citing real past statements is part of playing well.</li>
+        </ul>
+        <p>You only ever see what your role is allowed to see — Mafia kills, the Detective's results,
+        and other players' private thoughts stay hidden unless you are entitled to them.</p>
+
+        <h4>Tips</h4>
+        <ul>
+          <li>Track who voted for whom, and who benefits from each death.</li>
+          <li>As Mafia, keep a consistent story — contradictions get you caught.</li>
+          <li>As Detective, decide carefully when to reveal what you know; claiming early paints a target on you.</li>
+          <li>As Doctor, protect whoever the Mafia most want dead (often a revealed Detective).</li>
+        </ul>
+
+        <h4>What "Watch" mode adds</h4>
+        <p>Watch mode runs an autonomous AI-vs-AI game with a <b>belief dashboard</b> (how each agent's
+        suspicion shifts over time) and an evaluation <b>metrics card</b> scoring detection accuracy,
+        mafia deception, and the quality of evidence-based reasoning. Turn on <b>God mode</b> to see all
+        roles, the secret night actions, and every agent's private chain-of-thought.</p>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -390,48 +476,87 @@ async function wStart(players,rounds,seed){
 }
 
 /* ===================== PLAY MODE ===================== */
-const PL={view:null,cites:[]};
+const PL={view:null,cites:[],revealed:0,rollTimer:null};
+function pStopRoll(){ if(PL.rollTimer){clearTimeout(PL.rollTimer);PL.rollTimer=null;} }
 async function pStart(players,rounds,seed,role){
+  pStopRoll();PL.revealed=0;
   $("pFeed").innerHTML=`<div class="loading">Dealing roles…</div>`;$("pAction").innerHTML="";
   try{const r=await fetch("/api/newgame",{method:"POST",headers:{"Content-Type":"application/json"},
     body:JSON.stringify({players:+players,rounds:+rounds,seed:seed,role:role})});
     const d=await r.json();if(d.error){$("pFeed").innerHTML=`<div class="err">${esc(d.error)}</div>`;return;}
-    PL.view=d;pRender();
+    PL.view=d;PL.revealed=0;pRender();
   }catch(e){$("pFeed").innerHTML=`<div class="err">Could not reach the server.</div>`;}
 }
 async function pAct(action){
-  $("pAction").innerHTML=`<div class="waiting"><div class="spin"></div> The table is deliberating…</div>`;
+  pStopRoll();
+  $("pAction").innerHTML=`<div class="waiting"><div class="spin"></div> Submitting…</div>`;
   try{const r=await fetch("/api/act",{method:"POST",headers:{"Content-Type":"application/json"},
     body:JSON.stringify({session:PL.view.session,action})});
     const d=await r.json();if(d.error){$("pAction").innerHTML=`<div class="err">${esc(d.error)}</div>`;return;}
     PL.view=d;PL.cites=[];pRender();
   }catch(e){$("pAction").innerHTML=`<div class="err">Connection lost.</div>`;}
 }
-function pRender(){
+function pRoleCard(){
   const v=PL.view,me=v.you.name;
-  // role card
-  const rc=$("pRole");const fc=v.you.faction;
   let extra="";
   if(v.you.partners&&v.you.partners.length) extra+=`<div class="kv"><div class="k">Your mafia partners</div><div class="chips">${v.you.partners.map(p=>`<span class="chip mafia">${p}</span>`).join("")}</div></div>`;
   const known=Object.entries(v.you.known_factions||{});
   if(known.length) extra+=`<div class="kv"><div class="k">Investigations</div><div class="chips">${known.map(([n,f])=>`<span class="chip ${f==="mafia"?"mafia":"town"}">${n}: ${f}</span>`).join("")}</div></div>`;
-  rc.innerHTML=`<div class="rolecard"><div class="rl"><div class="av" style="background:${avc(me)}">${me[0]}</div>
+  $("pRole").innerHTML=`<div class="rolecard"><div class="rl"><div class="av" style="background:${avc(me)}">${me[0]}</div>
     <div><div class="nm">${me}</div><div class="pr"><span class="badge ${RB[v.you.role]||"b-unknown"}">${v.you.role}</span></div></div></div>
     <div class="desc">You are ${esc(v.you.ability)}.</div>${extra}</div>`;
-  // roster
-  $("pRoster").innerHTML=v.roster.map(p=>rosterCard(p,{deadSet:new Set(v.roster.filter(x=>!x.alive).map(x=>x.name)),role:p.role,speaking:null})).join("");
-  // phase
-  const isDay=v.phase&&v.phase.startsWith("day");
+}
+// derive dead/role/phase/speaking from only the first `n` revealed events
+function pDerive(n){
+  const v=PL.view,deadSet=new Set(),roleOf={};let day=v.day||1,phase="night",speaking=null;
+  for(let i=0;i<n;i++){const e=v.events[i];if(e.day)day=e.day;if(e.phase)phase=e.phase;
+    if(e.type==="kill"||e.type==="elimination"){deadSet.add(e.target);if(e.meta&&e.meta.role)roleOf[e.target]=e.meta.role;}
+    if(e.type==="speech"||e.type==="vote")speaking=e.actor;
+    else if(["night_start","day_start","kill","elimination","game_over"].includes(e.type))speaking=null;}
+  return {deadSet,roleOf,day,phase,speaking};
+}
+function pDrawRosterPhase(){
+  const v=PL.view,st=pDerive(PL.revealed);
+  const reveal=v.done?(v.reveal_roles||{}):{};
+  $("pRoster").innerHTML=v.roster.map(p=>{
+    const dead=st.deadSet.has(p.name);
+    let role=null;
+    if(p.is_you) role=v.you.role;
+    else if(v.done) role=reveal[p.name];
+    else if(dead) role=st.roleOf[p.name]||null;
+    return rosterCard({name:p.name,is_you:p.is_you},{deadSet:st.deadSet,role,speaking:st.speaking});
+  }).join("");
+  const isDay=st.phase&&st.phase.startsWith("day");
   $("pPhase").className="phasepill"+(isDay?" day":"");
-  $("pPhaseT").textContent=v.winner?"Game over":(isDay?"Day "+v.day:"Night "+v.day);
-  $("pPhaseS").textContent=v.winner?"":(isDay?"Discussion & voting":"Night phase");
-  const wt=$("pWin");wt.className="wintag"+(v.winner?" "+v.winner:"");
-  wt.textContent=v.winner?((v.winner===v.you.faction?"YOU WIN — ":"YOU LOSE — ")+v.winner.toUpperCase()+" WIN"):"";
-  // feed
-  const feed=$("pFeed");feed.innerHTML="";
-  for(const e of v.events){const h=evHTML(e,me);if(h){const d=document.createElement("div");d.className="ev";d.innerHTML=h;feed.appendChild(d);}}
+  $("pPhaseT").textContent=v.done&&PL.revealed>=v.events.length?"Game over":(isDay?"Day "+st.day:"Night "+st.day);
+  $("pPhaseS").textContent=(v.done&&PL.revealed>=v.events.length)?"":(isDay?"Discussion & voting":"Night phase");
+  const wt=$("pWin");const showWin=v.done&&PL.revealed>=v.events.length;
+  wt.className="wintag"+(showWin?" "+v.winner:"");
+  wt.textContent=showWin?((v.winner===v.you.faction?"YOU WIN — ":"YOU LOSE — ")+v.winner.toUpperCase()+" WIN"):"";
+}
+function pDrawFeed(){
+  const v=PL.view,me=v.you.name,feed=$("pFeed");feed.innerHTML="";
+  for(let i=0;i<PL.revealed;i++){const h=evHTML(v.events[i],me);if(h){const d=document.createElement("div");d.className="ev";d.innerHTML=h;feed.appendChild(d);}}
   feed.scrollTop=feed.scrollHeight;
-  pComposer();
+}
+function pRender(){
+  const v=PL.view,me=v.you.name,total=v.events.length;
+  pRoleCard();
+  // reveal instantly any leading new events that are *yours* (your speech/vote/investigation)
+  while(PL.revealed<total){const e=v.events[PL.revealed];
+    if(e.actor===me||(e.type==="investigation"&&e.actor===me))PL.revealed++;else break;}
+  pDrawFeed();pDrawRosterPhase();
+  if(PL.revealed>=total){pComposer();return;}
+  $("pAction").innerHTML=`<div class="waiting"><div class="spin"></div> The table responds…</div>`;
+  pRollNext();
+}
+function pRollNext(){
+  const v=PL.view,total=v.events.length;
+  if(PL.revealed>=total){pStopRoll();pDrawRosterPhase();pComposer();return;}
+  PL.revealed++;pDrawFeed();pDrawRosterPhase();
+  const e=v.events[PL.revealed-1];
+  const delay=e.type==="speech"?780:e.type==="vote"?480:e.type==="game_over"?700:560;
+  PL.rollTimer=setTimeout(pRollNext,delay);
 }
 function pComposer(){
   const v=PL.view,box=$("pAction");
@@ -474,8 +599,11 @@ function pComposer(){
 /* ===================== shell / routing ===================== */
 function show(screen){["home","watch","play"].forEach(s=>{const el=$(s);if(s==="home")el.style.display=screen==="home"?"grid":"none";
   else el.classList.toggle("active",screen===s);});}
-function goHome(){wPause();show("home");}
+function goHome(){wPause();pStopRoll();show("home");}
 $("homeBtn").onclick=goHome;
+$("guideBtn").onclick=()=>{$("guide").style.display="flex";};
+$("guideClose").onclick=()=>{$("guide").style.display="none";};
+$("guide").addEventListener("click",e=>{if(e.target.id==="guide")$("guide").style.display="none";});
 document.querySelectorAll(".mode").forEach(m=>m.onclick=()=>{
   MODE=m.dataset.mode;document.querySelectorAll(".mode").forEach(x=>x.classList.toggle("on",x===m));
   $("roleWrap").style.display=MODE==="play"?"flex":"none";});

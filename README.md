@@ -92,7 +92,9 @@ npm**) has two modes:
   evidence/citation box that feeds the reasoning-quality metric), and use your
   **night ability** (kill / investigate / protect),
 - strict **information filtering** — you only ever see what your role is entitled
-  to see; the engine rules are identical to the autonomous game.
+  to see; the engine rules are identical to the autonomous game,
+- AI replies **roll in one message at a time** so the table reads like a real
+  conversation, and a built-in **How to play** guide explains the full rules.
 
 ### Live games with Claude agents
 
