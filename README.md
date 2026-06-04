@@ -260,6 +260,143 @@ reasoning prompt style, and number of agents to understand what drives performan
 
 ---
 
+## How it's built — a full tour
+
+This section walks through *what* was built, *how* the pieces fit, and the design
+decisions behind them.
+
+### 1. The whole system at a glance
+
+```
+                         ┌──────────────────────────────────────────────┐
+                         │                 mafia/ (engine)              │
+   CLI  ─┐               │                                              │
+  (cli)  │   GameConfig  │  roles ─► state (Players + Event log)         │
+         ├──────────────►│     │                                        │
+  Web ───┤               │     ▼                                        │
+ server  │   client      │  Engine ──uses──► Agent ──calls──► LLMClient  │
+ +session│   factory     │   (phases,         (memory,        (Anthropic │
+         │               │    voting,          beliefs,        or Mock)  │
+         └──────────────►│    resolution)      CoT, parsing)             │
+                         │     │                                        │
+                         │     ▼                                        │
+                         │  GameState.events ─► evaluation ─► metrics    │
+                         │                    └► logging  ─► JSON/replay │
+                         └──────────────────────────────────────────────┘
+```
+
+Everything is driven by one **append-only `Event` log**. Public events are visible
+to all; private events (night moves, investigation results, chain-of-thought)
+carry a `visible_to` whitelist. An agent's "memory" is simply the **filtered
+projection** of that log for its name — which is how hidden information is
+*enforced structurally* rather than by trusting prompts. The same log is the input
+to evaluation, to the replay/transcript, and to the web UI.
+
+### 2. Lifecycle of a single turn (where the AI reasoning happens)
+
+1. The **Engine** reaches a decision point (e.g. it's a player's turn to speak).
+2. It calls that player's **Agent**, which:
+   - builds its **memory** by filtering the event log to what it may see,
+   - computes structured context — a **suspicion vector** over other players,
+     **evidence** it could cite, who has accused it, the latest death, the
+     detective's findings (if any),
+   - assembles a **role-specific system prompt** (mafia are told to deceive and
+     protect partners; town to hunt contradictions) plus a task prompt that asks
+     for **explicit private chain-of-thought first, then a structured action**,
+   - sends it to the **LLMClient** and **parses the JSON** reply defensively
+     (tolerates markdown fences, stray prose, and illegal targets).
+3. The Engine validates the action, **emits events** (public speech/vote + private
+   reasoning), updates state, and **snapshots every agent's beliefs**.
+4. Win conditions are checked; the loop continues.
+
+The autonomous game (`play()`) runs this straight through. The **interactive game**
+(`interactive_flow`, a Python *generator*) runs the identical logic but `yield`s
+control whenever it's the human's turn, so a person can occupy any seat with the
+exact same rules.
+
+### 3. The evaluation harness (the research core)
+
+Social deduction has no scalar reward, so the project scores the things that
+actually matter, all recomputable from a saved game:
+
+- **Detection** — do town votes/eliminations land on real mafia? does the town act
+  on the detective's findings?
+- **Deception** — how much town suspicion did mafia dodge (`deception_index`), and
+  is their alibi internally **consistent** (no contradictory role-claims, no
+  unjustified accusation flips)?
+- **Reasoning quality** — agents must **cite prior events** before voting;
+  citations are checked against the real log to separate grounded reasoning from
+  fluent hallucination.
+- Aggregated across many games with **win rates and Wilson confidence intervals**,
+  plus **ablation sweeps** (memory depth, discussion length, table size, model).
+
+### 4. Key design decisions (and why)
+
+| Decision | Why |
+|---|---|
+| **Event-sourced state** | One immutable log → trivial hidden-info filtering, replay, and metrics from a single source of truth. |
+| **Provider abstraction + a real mock backend** | The whole system (engine, eval, UI, tests) runs offline at zero cost; swapping in Claude is a one-liner. The mock isn't a stub — it plays a valid heuristic game so baselines and CI are meaningful. |
+| **Structured JSON actions + defensive parsing** | Keeps free-form LLM output machine-checkable without crashing on a single bad generation. |
+| **Generator-based interactive flow** | Lets a human share the *exact* engine path as the AI — no duplicated rules to drift out of sync. |
+| **Metrics computed from the log, not in the loop** | Evaluation is reproducible and auditable; you can re-score any saved game. |
+| **Stdlib-only web server + single HTML file** | No build step, no npm, no framework — clone and run. |
+
+## Skills & techniques demonstrated
+
+Mapped to the kind of work this exercises — useful as a quick read of what the
+project shows.
+
+**Core ML / agentic**
+- Multi-agent orchestration with **per-agent state, memory, and hidden information**.
+- **Theory-of-mind prompting** (modelling what others believe about you) and
+  **role-conditioned strategic deception** vs. inference.
+- **Explicit chain-of-thought** before action; structured tool-style JSON outputs.
+- **LLM-agent evaluation design**: turning fuzzy notions (deception quality,
+  reasoning quality) into automatable, log-grounded metrics.
+- **Belief-state tracking** and updating from natural-language signals over time.
+- **Ablation methodology** and reporting with confidence intervals.
+
+**Engineering**
+- A clean **game engine** (phase state machine, action resolution, win logic).
+- **Event-sourced architecture** with serialization, persistence, and replay.
+- A **provider-abstraction layer** (Anthropic + offline mock) behind one interface.
+- **Generator/coroutine** design for human-in-the-loop interactivity.
+- A dependency-free **HTTP API + session management** and a hand-written **SPA**
+  (state management, animation, a live data-viz dashboard) — no frameworks.
+- **Robust parsing** of unreliable model output; **deterministic seeding** for
+  reproducibility; a **21-test** suite covering invariants, metrics, and play.
+
+**Domain**
+- Mafia/Werewolf rules, role balance, and optimal-ish strategy encoded into both
+  the prompts and the heuristic baseline.
+- How to measure **argument consistency** and **evidence grounding** in text.
+
+## How it was made (process)
+
+1. **Modelled the domain first** — roles, factions, abilities, and balanced role
+   tables (`roles.py`), then an event-sourced `GameState` so hidden information had
+   a single enforcement point.
+2. **Built the engine** as a phase state machine (night → discussion → vote →
+   resolve → win-check) with random-tie-breaking and validated targets.
+3. **Added the agent layer** — memory projection, suspicion/evidence context,
+   role-specific prompts with mandatory chain-of-thought, and defensive JSON
+   parsing — behind an **LLM provider interface** with a genuinely playable
+   **mock backend** so everything runs without an API key.
+4. **Wrote the evaluation harness** — detection, deception/consistency, and
+   evidence-grounded-reasoning metrics, batch aggregation, Wilson intervals, and
+   ablation sweeps — all computed from the saved log.
+5. **Layered on tooling** — CLI (`play`/`eval`/`ablate`/`replay`/`serve`),
+   structured logging + colourised replay, and per-game JSON save/load.
+6. **Made it observable and interactive** — a stdlib web server, then a single-page
+   UI with a **Watch** mode (belief dashboard + metrics) and a **Play** mode
+   (human takes a seat, AI messages stream in, in-app rules guide).
+7. **Tested throughout** — invariants (no self-kills, hidden-info filtering,
+   determinism), metric correctness (grounded vs. hallucinated citations,
+   consistency penalties), and a full scripted human session.
+
+Built iteratively, validated at each step by running real games and inspecting the
+transcripts, metrics, and UI — not just unit tests.
+
 ## Extending it
 
 - **New roles** (e.g. Jester, Vigilante): add to `Role` in `roles.py`, give it a
