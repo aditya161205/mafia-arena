@@ -279,6 +279,155 @@ class Engine:
             return True
         return False
 
+    # ------------------------------------------------------ interactive (human)
+    @staticmethod
+    def _human_action(resp: dict | None) -> Action:
+        resp = resp or {}
+        target = resp.get("target")
+        cites = resp.get("citations") or []
+        if isinstance(cites, str):
+            cites = [cites]
+        return Action(
+            reasoning=str(resp.get("reasoning", "")),
+            message=str(resp.get("message", "")),
+            target=target if isinstance(target, str) and target else None,
+            citations=[str(c) for c in cites if str(c).strip()],
+        )
+
+    def interactive_flow(self, human: str):
+        """Generator driving a game where ``human`` plays one seat.
+
+        It runs all AI turns inline and ``yield``s a *request* dict whenever the
+        human must act; the caller resumes it with ``gen.send(response_dict)``.
+        Resolution reuses the same helpers as the autonomous engine, so the rules
+        are identical for human and AI players.
+        """
+        while self.state.winner is None and self.state.day < self.config.max_days:
+            # ---- NIGHT ----
+            self.state.day += 1
+            self.state.phase = Phase.NIGHT
+            self._emit(Event(type=EventType.NIGHT_START, day=self.state.day, phase=Phase.NIGHT,
+                             content="Night falls. The town sleeps."))
+            protected: str | None = None
+            kill_votes: Counter[str] = Counter()
+
+            for det in self._living_with_role(Role.DETECTIVE):
+                allowed = [n for n in self.state.living_names() if n != det.name]
+                if det.name == human:
+                    resp = yield {"kind": "night_investigate", "options": allowed}
+                    act = self._human_action(resp)
+                else:
+                    act = self.agents[det.name].night_action(self.state)
+                target = self._valid_target(act, allowed)
+                if target:
+                    self._record_reasoning(det.name, act)
+                    self._emit(Event(
+                        type=EventType.INVESTIGATION, day=self.state.day, phase=Phase.NIGHT,
+                        actor=det.name, target=target, private=True, visible_to=[det.name],
+                        meta={"faction": self.state.player(target).faction.value},
+                    ))
+
+            for doc in self._living_with_role(Role.DOCTOR):
+                allowed = self.state.living_names()
+                if doc.name == human:
+                    resp = yield {"kind": "night_protect", "options": allowed}
+                    act = self._human_action(resp)
+                else:
+                    act = self.agents[doc.name].night_action(self.state)
+                target = self._valid_target(act, allowed)
+                self._record_reasoning(doc.name, act)
+                if target:
+                    protected = target
+                    self._emit(Event(
+                        type=EventType.NIGHT_ACTION, day=self.state.day, phase=Phase.NIGHT,
+                        actor=doc.name, target=target, private=True, visible_to=[doc.name],
+                        meta={"kind": "protect"}))
+
+            mafia = [p for p in self.state.living if p.faction is Faction.MAFIA]
+            for m in mafia:
+                allowed = [n for n in self.state.living_names()
+                           if n != m.name and n not in m.partners] or \
+                          [n for n in self.state.living_names() if n != m.name]
+                if m.name == human:
+                    resp = yield {"kind": "night_kill", "options": allowed}
+                    act = self._human_action(resp)
+                else:
+                    act = self.agents[m.name].night_action(self.state)
+                target = self._valid_target(act, allowed)
+                self._record_reasoning(m.name, act)
+                if target:
+                    kill_votes[target] += 1
+                    self._emit(Event(
+                        type=EventType.NIGHT_ACTION, day=self.state.day, phase=Phase.NIGHT,
+                        actor=m.name, target=target, private=True,
+                        visible_to=[p.name for p in mafia], meta={"kind": "kill_vote"}))
+
+            victim = self._top_choice(kill_votes)
+            if victim and victim == protected:
+                self._emit(Event(type=EventType.SAVE, day=self.state.day, phase=Phase.NIGHT,
+                                 target=victim, meta={"saved": True}))
+            elif victim:
+                self.state.player(victim).alive = False
+                self._emit(Event(type=EventType.KILL, day=self.state.day, phase=Phase.NIGHT,
+                                 target=victim, content=f"{victim} was killed during the night.",
+                                 meta={"role": self.state.player(victim).role.value}))
+            self._snapshot_beliefs("night resolved")
+            if self._finish_if_over():
+                return
+
+            # ---- DAY ----
+            self.state.phase = Phase.DAY_DISCUSSION
+            self._emit(Event(type=EventType.DAY_START, day=self.state.day,
+                             phase=Phase.DAY_DISCUSSION,
+                             content=f"The town wakes. Living players: {', '.join(self.state.living_names())}."))
+            for r in range(self.config.discussion_rounds):
+                for name in self.state.living_names():
+                    if name == human:
+                        opts = [n for n in self.state.living_names() if n != human]
+                        resp = yield {"kind": "speech", "round": r + 1,
+                                      "total": self.config.discussion_rounds, "options": opts}
+                        act = self._human_action(resp)
+                    else:
+                        act = self.agents[name].speak(self.state, r, self.config.discussion_rounds)
+                    self._record_reasoning(name, act)
+                    self._emit(Event(type=EventType.SPEECH, day=self.state.day,
+                                     phase=Phase.DAY_DISCUSSION, actor=name,
+                                     target=act.target,
+                                     content=act.message.strip() or "(stays quiet)"))
+                    self._snapshot_beliefs(f"{name} spoke")
+
+            self.state.phase = Phase.DAY_VOTE
+            tally: Counter[str] = Counter()
+            for name in self.state.living_names():
+                allowed = [n for n in self.state.living_names() if n != name]
+                if name == human:
+                    resp = yield {"kind": "vote", "options": allowed}
+                    act = self._human_action(resp)
+                else:
+                    act = self.agents[name].vote(self.state)
+                target = self._valid_target(act, allowed)
+                self._record_reasoning(name, act)
+                if target:
+                    tally[target] += 1
+                    self._emit(Event(type=EventType.VOTE, day=self.state.day, phase=Phase.DAY_VOTE,
+                                     actor=name, target=target, content=act.message.strip(),
+                                     meta={"citations": list(act.citations)}))
+                    self._snapshot_beliefs(f"{name} voted")
+
+            eliminated = self._top_choice(tally)
+            if eliminated:
+                self.state.player(eliminated).alive = False
+                self._emit(Event(type=EventType.ELIMINATION, day=self.state.day, phase=Phase.DAY_VOTE,
+                                 target=eliminated, content=f"{eliminated} was voted out by the town.",
+                                 meta={"role": self.state.player(eliminated).role.value,
+                                       "votes": dict(tally)}))
+            self._snapshot_beliefs("vote resolved")
+            if self._finish_if_over():
+                return
+
+        if self.state.winner is None:
+            self._declare(self.state.check_winner() or Faction.TOWN)
+
     def _declare(self, winner: Faction) -> None:
         self.state.winner = winner
         self.state.phase = Phase.GAME_OVER

@@ -3,389 +3,495 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Mafia / Werewolf Arena</title>
+<title>Mafia Arena</title>
 <style>
-  :root {
-    --bg:#0b0e17; --panel:#121726; --panel2:#1a2034; --panel3:#222a42; --line:#28304c;
-    --text:#eaeefb; --muted:#8b94b8; --faint:#5d6488; --accent:#8b9bff;
-    --mafia:#ff6384; --town:#3fd6a0; --detective:#5db4ff; --doctor:#34c9c4; --warn:#ffb454;
-    --night:linear-gradient(135deg,#0a1130,#141c44); --day:linear-gradient(135deg,#241d44,#33264e);
-    --radius:12px;
+  :root{
+    --bg:#0a0c12; --bg2:#0e1119; --panel:#11141e; --panel2:#161a26; --panel3:#1d2231;
+    --line:#222838; --line2:#2c3344; --text:#e9ebf4; --muted:#8b93a9; --faint:#5b6378;
+    --accent:#7c6cff; --accent2:#9a8cff; --accentDim:#7c6cff22;
+    --mafia:#f2557a; --town:#33d39a; --detective:#54a8ff; --doctor:#2fc7c2; --warn:#f0b24a;
+    --r:12px; --r2:16px;
+    --shadow:0 10px 40px -12px rgba(0,0,0,.6);
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,sans-serif;
   }
-  * { box-sizing:border-box; }
-  html,body { margin:0; height:100%; }
-  body {
-    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;
-    background:var(--bg); color:var(--text); height:100vh; overflow:hidden;
-    -webkit-font-smoothing:antialiased;
-  }
-  .app { display:flex; flex-direction:column; height:100vh; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;}
+  body{font-family:var(--sans);background:
+      radial-gradient(1200px 700px at 80% -10%, #15182600, #0a0c12 60%),
+      radial-gradient(900px 600px at 0% 110%, #1a1530, #0a0c12 55%), var(--bg);
+    color:var(--text);height:100vh;overflow:hidden;-webkit-font-smoothing:antialiased;
+    font-size:14px;letter-spacing:.1px;}
+  .app{display:flex;flex-direction:column;height:100vh;}
+  button{font-family:var(--sans);cursor:pointer;}
+  .mono{font-variant-numeric:tabular-nums;}
+  .uppercase{text-transform:uppercase;letter-spacing:1.4px;font-size:10.5px;font-weight:700;color:var(--muted);}
 
-  /* ---------- header ---------- */
-  header {
-    display:flex; align-items:center; gap:16px; padding:11px 20px;
-    background:linear-gradient(180deg,#141a2c,#10151f); border-bottom:1px solid var(--line);
-  }
-  .brand { display:flex; align-items:center; gap:9px; font-weight:700; font-size:16px; letter-spacing:.2px; }
-  .brand .logo { font-size:19px; filter:drop-shadow(0 0 7px #8b9bff77); }
-  .brand small { font-weight:500; color:var(--muted); font-size:11.5px; margin-left:2px; }
-  .ctrls { display:flex; align-items:center; gap:9px; flex-wrap:wrap; }
-  .field { display:flex; align-items:center; gap:6px; font-size:11.5px; color:var(--muted); }
-  .field input {
-    background:var(--panel2); border:1px solid var(--line); color:var(--text);
-    border-radius:8px; padding:6px 8px; font-size:13px; width:52px;
-  }
-  .field input.seed { width:84px; }
-  .btn {
-    background:linear-gradient(180deg,#93a0ff,#7b8bff); color:#0a0d18; border:none;
-    border-radius:9px; padding:8px 15px; font-size:13px; font-weight:700; cursor:pointer;
-    box-shadow:0 2px 10px #7b8bff44;
-  }
-  .btn:active { transform:translateY(1px); }
-  .grow { flex:1; }
-  .switch { display:flex; align-items:center; gap:7px; font-size:12px; color:var(--muted); cursor:pointer; user-select:none; }
-  .switch input { accent-color:var(--accent); width:15px; height:15px; }
+  /* ---------- top bar ---------- */
+  header{display:flex;align-items:center;gap:18px;padding:13px 22px;
+    background:linear-gradient(180deg,#0f1320,#0b0e16);border-bottom:1px solid var(--line);}
+  .brand{display:flex;align-items:center;gap:11px;}
+  .mark{width:26px;height:26px;border-radius:8px;background:linear-gradient(135deg,#7c6cff,#54a8ff);
+    box-shadow:0 0 18px #7c6cff66;position:relative;flex-shrink:0;}
+  .mark::after{content:"";position:absolute;inset:7px 7px auto auto;width:11px;height:11px;border-radius:50%;
+    background:var(--bg2);}
+  .brand .t{font-weight:700;font-size:15.5px;letter-spacing:.2px;}
+  .brand .s{color:var(--muted);font-weight:500;font-size:11.5px;margin-top:1px;}
+  .seg{display:flex;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:3px;gap:2px;}
+  .seg button{border:none;background:transparent;color:var(--muted);font-size:12.5px;font-weight:600;
+    padding:6px 14px;border-radius:7px;transition:.18s;}
+  .seg button.on{background:linear-gradient(180deg,#2a2550,#221e44);color:#fff;box-shadow:inset 0 0 0 1px #ffffff10;}
+  .grow{flex:1;}
+  .ghost{background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:9px;
+    padding:8px 14px;font-size:12.5px;font-weight:600;transition:.18s;}
+  .ghost:hover{border-color:var(--line2);}
+  .primary{background:linear-gradient(180deg,#8b7cff,#6f5bff);border:none;color:#fff;border-radius:9px;
+    padding:9px 18px;font-size:13px;font-weight:700;box-shadow:0 6px 18px -6px #6f5bffaa;}
+  .primary:active{transform:translateY(1px);}
 
-  /* ---------- layout ---------- */
-  main { display:grid; grid-template-columns:248px 1fr 312px; flex:1; min-height:0; }
-  .col { min-height:0; display:flex; flex-direction:column; }
-  .roster { background:var(--panel); border-right:1px solid var(--line); overflow-y:auto; padding:14px 12px; }
-  .beliefs { background:var(--panel); border-left:1px solid var(--line); overflow-y:auto; padding:14px; }
-  .secttl { font-size:10.5px; text-transform:uppercase; letter-spacing:1.3px; color:var(--muted); margin:2px 4px 11px; font-weight:700; }
+  /* ---------- home ---------- */
+  .home{flex:1;display:grid;place-items:center;padding:24px;overflow:auto;}
+  .card{background:linear-gradient(180deg,#12151f,#0f121b);border:1px solid var(--line);
+    border-radius:20px;box-shadow:var(--shadow);}
+  .home .card{width:min(560px,94vw);padding:30px 32px;}
+  .home h1{margin:0 0 6px;font-size:23px;letter-spacing:.2px;}
+  .home p.lede{margin:0 0 22px;color:var(--muted);font-size:13.5px;line-height:1.6;}
+  .modegrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:22px;}
+  .mode{border:1px solid var(--line);background:var(--panel2);border-radius:14px;padding:16px;cursor:pointer;
+    transition:.18s;}
+  .mode:hover{border-color:var(--line2);}
+  .mode.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent),0 0 30px -8px #7c6cff77;background:var(--panel3);}
+  .mode .h{font-weight:700;font-size:14px;margin-bottom:4px;}
+  .mode .d{color:var(--muted);font-size:12px;line-height:1.5;}
+  .row{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:20px;}
+  .inp{display:flex;flex-direction:column;gap:6px;}
+  .inp label{font-size:11px;color:var(--muted);font-weight:600;}
+  .inp input,.inp select{background:var(--panel2);border:1px solid var(--line);color:var(--text);
+    border-radius:9px;padding:9px 11px;font-size:13px;min-width:96px;}
+  .inp input:focus,.inp select:focus{outline:none;border-color:var(--accent);}
+  .startbtn{width:100%;justify-content:center;font-size:14px;padding:12px;}
 
-  /* ---------- roster ---------- */
-  .pcard {
-    display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:12px;
-    background:var(--panel2); margin-bottom:7px; border:1px solid transparent; transition:.2s;
-  }
-  .pcard.dead { opacity:.4; filter:grayscale(.7); }
-  .pcard.speaking { border-color:var(--accent); box-shadow:0 0 0 1px var(--accent),0 0 22px #8b9bff33; transform:translateX(2px); }
-  .avatar { width:34px; height:34px; border-radius:50%; display:grid; place-items:center; font-weight:800; font-size:14px; color:#0a0d18; flex-shrink:0; }
-  .pmeta { min-width:0; flex:1; }
-  .pname { font-size:13.5px; font-weight:650; }
-  .prole { margin-top:2px; }
-  .badge { font-size:9.5px; padding:1.5px 7px; border-radius:20px; font-weight:800; text-transform:uppercase; letter-spacing:.6px; }
-  .b-mafia{background:#ff638422;color:var(--mafia);} .b-town{background:#3fd6a022;color:var(--town);}
-  .b-detective{background:#5db4ff22;color:var(--detective);} .b-doctor{background:#34c9c422;color:var(--doctor);}
-  .b-unknown{background:#ffffff12;color:var(--muted);}
-  .skull{font-size:13px;}
+  /* ---------- shared layout ---------- */
+  main{flex:1;min-height:0;display:none;}
+  main.active{display:grid;}
+  .col{min-height:0;display:flex;flex-direction:column;}
+  aside{background:var(--panel);overflow-y:auto;}
+  .panL{border-right:1px solid var(--line);padding:16px 14px;}
+  .panR{border-left:1px solid var(--line);padding:16px 15px;}
+  .secttl{margin:2px 4px 12px;}
 
-  /* ---------- stage ---------- */
-  .stage { background:var(--bg); }
-  .phasebar { padding:11px 22px; display:flex; align-items:center; gap:13px; border-bottom:1px solid var(--line); background:var(--night); transition:background .7s; }
-  .phasebar.day { background:var(--day); }
-  .pemoji { font-size:21px; }
-  .ptitle { font-size:14.5px; font-weight:700; }
-  .psub { font-size:11.5px; color:var(--muted); }
-  .winnerTag { margin-left:auto; font-weight:800; padding:5px 14px; border-radius:20px; font-size:12.5px; display:none; }
-  .winnerTag.town{background:#3fd6a022;color:var(--town);display:block;} .winnerTag.mafia{background:#ff638422;color:var(--mafia);display:block;}
+  /* roster */
+  .pcard{display:flex;align-items:center;gap:11px;padding:10px 11px;border-radius:12px;background:var(--panel2);
+    margin-bottom:8px;border:1px solid transparent;transition:.2s;}
+  .pcard.dead{opacity:.42;filter:grayscale(.7);}
+  .pcard.you{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accentDim);}
+  .pcard.speaking{border-color:var(--accent2);box-shadow:0 0 0 1px var(--accent2),0 0 22px -6px #9a8cff66;transform:translateX(2px);}
+  .av{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font-weight:800;font-size:13px;
+    color:#0a0c12;flex-shrink:0;}
+  .pmeta{min-width:0;flex:1;}
+  .pn{font-size:13.5px;font-weight:650;display:flex;align-items:center;gap:6px;}
+  .youtag{font-size:9px;font-weight:800;color:var(--accent2);border:1px solid var(--accent);border-radius:6px;padding:0 5px;}
+  .pr{margin-top:3px;}
+  .badge{font-size:9px;padding:2px 8px;border-radius:20px;font-weight:800;text-transform:uppercase;letter-spacing:.7px;}
+  .b-mafia{background:#f2557a22;color:var(--mafia);} .b-villager,.b-town{background:#33d39a22;color:var(--town);}
+  .b-detective{background:#54a8ff22;color:var(--detective);} .b-doctor{background:#2fc7c222;color:var(--doctor);}
+  .b-unknown{background:#ffffff10;color:var(--muted);}
+  .dot{font-size:10px;color:var(--muted);}
 
-  .feed { flex:1; overflow-y:auto; padding:18px 24px; }
-  .ev { margin:0 0 12px; animation:pop .32s ease; }
-  @keyframes pop { from{opacity:0;transform:translateY(6px);} to{opacity:1;transform:none;} }
-  .sys { text-align:center; color:var(--muted); font-size:12px; margin:15px 0; display:flex; align-items:center; gap:10px; justify-content:center; }
-  .sys::before,.sys::after { content:""; height:1px; background:var(--line); flex:1; max-width:80px; }
-  .sys.kill{color:var(--mafia);font-weight:600;} .sys.save{color:var(--town);font-weight:600;}
-  .sys.elim{color:var(--warn);font-weight:600;} .sys.win{color:var(--town);font-size:15px;font-weight:800;}
-  .chat { display:flex; gap:10px; align-items:flex-start; }
-  .bubble { background:var(--panel2); border:1px solid var(--line); border-radius:5px 14px 14px 14px; padding:9px 13px; max-width:660px; }
-  .bubble .who { font-size:12px; font-weight:700; margin-bottom:2px; }
-  .bubble .txt { font-size:13.5px; line-height:1.45; }
-  .vote { font-size:12.5px; color:var(--detective); padding-left:44px; }
-  .vote .cite { display:block; color:var(--muted); font-size:11.5px; font-style:italic; margin-top:2px; padding-left:18px; }
-  .think { font-size:11.5px; color:var(--muted); font-style:italic; padding-left:44px; margin-top:2px; }
-  .nact { font-size:12px; color:#b6a3e6; padding-left:6px; }
+  /* stage */
+  .stage{background:transparent;}
+  .topbar{display:flex;align-items:center;gap:14px;padding:13px 24px;border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg,#0e111a,#0b0e15);}
+  .phasepill{display:flex;align-items:center;gap:8px;font-weight:700;font-size:13px;}
+  .pdot{width:9px;height:9px;border-radius:50%;background:var(--detective);box-shadow:0 0 10px var(--detective);}
+  .phasepill.day .pdot{background:var(--warn);box-shadow:0 0 10px var(--warn);}
+  .phasesub{color:var(--muted);font-size:11.5px;font-weight:500;}
+  .wintag{margin-left:auto;font-weight:800;font-size:12px;padding:6px 14px;border-radius:20px;display:none;}
+  .wintag.town{background:#33d39a1e;color:var(--town);display:block;} .wintag.mafia{background:#f2557a1e;color:var(--mafia);display:block;}
 
-  /* ---------- playbar ---------- */
-  .playbar { display:flex; align-items:center; gap:12px; padding:10px 22px; border-top:1px solid var(--line); background:var(--panel); }
-  .icon { background:var(--panel2); border:1px solid var(--line); color:var(--text); width:36px; height:31px; border-radius:8px; font-size:13px; padding:0; cursor:pointer; }
-  .icon:hover { border-color:var(--accent); }
-  .speed { display:flex; align-items:center; gap:7px; font-size:11.5px; color:var(--muted); }
-  .speed input { accent-color:var(--accent); }
-  .prog { flex:1; height:6px; background:var(--panel2); border-radius:6px; overflow:hidden; }
-  .prog>div { height:100%; background:linear-gradient(90deg,#7b8bff,#34c9c4); width:0; transition:width .15s; }
-  .count { font-size:11.5px; color:var(--muted); min-width:64px; text-align:right; font-variant-numeric:tabular-nums; }
+  .feed{flex:1;overflow-y:auto;padding:20px 26px;}
+  .ev{margin:0 0 13px;animation:rise .3s ease;}
+  @keyframes rise{from{opacity:0;transform:translateY(7px);}to{opacity:1;transform:none;}}
+  .sys{text-align:center;color:var(--muted);font-size:12px;margin:16px 0;display:flex;align-items:center;gap:12px;justify-content:center;}
+  .sys::before,.sys::after{content:"";height:1px;background:var(--line);flex:1;max-width:90px;}
+  .sys b{color:var(--text);}
+  .sys.kill{color:var(--mafia);} .sys.save{color:var(--town);} .sys.elim{color:var(--warn);}
+  .sys.win{color:var(--town);font-size:15px;font-weight:800;letter-spacing:.3px;}
+  .chat{display:flex;gap:11px;align-items:flex-start;}
+  .bubble{background:var(--panel2);border:1px solid var(--line);border-radius:5px 14px 14px 14px;
+    padding:10px 14px;max-width:660px;}
+  .bubble.mine{background:#221e3e;border-color:#3a3470;}
+  .bubble .who{font-size:12px;font-weight:700;margin-bottom:3px;}
+  .bubble .tx{font-size:13.5px;line-height:1.5;}
+  .vote{font-size:12.5px;color:var(--detective);padding-left:45px;}
+  .vote .cite{display:block;color:var(--muted);font-size:11.5px;font-style:italic;margin-top:2px;padding-left:14px;}
+  .nact{font-size:12px;color:#b3a4ec;padding-left:8px;}
+  .think{font-size:11.5px;color:var(--muted);font-style:italic;padding-left:45px;margin-top:2px;}
+  .investig{font-size:12.5px;color:var(--detective);padding-left:8px;font-weight:600;}
 
-  /* ---------- beliefs dashboard ---------- */
-  .obsrow { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
-  select { background:var(--panel2); border:1px solid var(--line); color:var(--text); border-radius:8px; padding:6px 8px; font-size:12.5px; flex:1; }
-  .belief-trigger { font-size:11px; color:var(--muted); margin:0 2px 12px; min-height:14px; }
-  .brow { margin-bottom:9px; }
-  .brow .lbl { display:flex; justify-content:space-between; font-size:12px; margin-bottom:3px; }
-  .brow .lbl .nm { font-weight:600; }
-  .brow .lbl .vl { color:var(--muted); font-variant-numeric:tabular-nums; }
-  .bar { height:8px; border-radius:6px; background:var(--panel2); overflow:hidden; }
-  .bar>div { height:100%; border-radius:6px; transition:width .35s ease, background .3s; }
-  .hint { font-size:11px; color:var(--muted); line-height:1.5; }
+  /* playback */
+  .playbar{display:flex;align-items:center;gap:12px;padding:11px 24px;border-top:1px solid var(--line);background:var(--panel);}
+  .pbtn{background:var(--panel2);border:1px solid var(--line);color:var(--text);height:32px;padding:0 12px;border-radius:8px;
+    font-size:12px;font-weight:600;transition:.15s;}
+  .pbtn:hover{border-color:var(--line2);}
+  .pbtn.play{min-width:78px;}
+  .speed{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted);}
+  .speed input{accent-color:var(--accent);}
+  .prog{flex:1;height:5px;background:var(--panel2);border-radius:5px;overflow:hidden;}
+  .prog>div{height:100%;background:linear-gradient(90deg,#7c6cff,#2fc7c2);width:0;transition:width .15s;}
+  .count{font-size:11.5px;color:var(--muted);min-width:62px;text-align:right;}
 
-  .mcard { background:var(--panel2); border:1px solid var(--line); border-radius:12px; padding:12px 13px; margin-top:16px; }
-  .mcard h3 { margin:0 0 9px; font-size:11px; text-transform:uppercase; letter-spacing:1px; color:var(--muted); }
-  .mrow { display:flex; justify-content:space-between; font-size:12.5px; padding:3px 0; }
-  .mrow .v { font-weight:700; font-variant-numeric:tabular-nums; }
-  .mrow .v.good{color:var(--town);} .mrow .v.bad{color:var(--mafia);} .mrow .v.mid{color:var(--warn);}
-  .mgroup { font-size:10px; text-transform:uppercase; letter-spacing:.8px; color:var(--faint); margin:9px 0 2px; }
+  /* belief dashboard */
+  select.obs{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:9px;
+    padding:8px 10px;font-size:12.5px;margin-bottom:8px;}
+  .btrig{font-size:11px;color:var(--faint);margin:0 2px 14px;min-height:13px;}
+  .brow{margin-bottom:10px;}
+  .brow .l{display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;}
+  .brow .l .nm{font-weight:650;} .brow .l .vl{color:var(--muted);}
+  .bar{height:7px;border-radius:5px;background:var(--panel2);overflow:hidden;}
+  .bar>div{height:100%;border-radius:5px;transition:width .35s ease;}
+  .hint{font-size:11px;color:var(--faint);line-height:1.55;margin-top:4px;}
+  .mcard{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:14px;margin-top:18px;}
+  .mcard h3{margin:0 0 10px;}
+  .mrow{display:flex;justify-content:space-between;font-size:12.5px;padding:3.5px 0;}
+  .mrow .v{font-weight:700;} .mrow .v.good{color:var(--town);} .mrow .v.bad{color:var(--mafia);} .mrow .v.mid{color:var(--warn);}
+  .mg{margin:11px 0 3px;}
 
-  .loading,.err { text-align:center; color:var(--muted); margin-top:50px; font-size:13.5px; }
-  .err { color:var(--mafia); }
+  /* play: role card + composer */
+  .rolecard{background:linear-gradient(180deg,#161a28,#11141e);border:1px solid var(--line);border-radius:14px;
+    padding:14px;margin-bottom:16px;}
+  .rolecard .rl{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+  .rolecard .nm{font-weight:750;font-size:15px;}
+  .rolecard .desc{font-size:12px;color:var(--muted);line-height:1.55;}
+  .rolecard .kv{margin-top:10px;font-size:12px;}
+  .rolecard .kv .k{color:var(--faint);text-transform:uppercase;font-size:9.5px;letter-spacing:1px;}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:5px;}
+  .chip{font-size:11.5px;border:1px solid var(--line2);background:var(--panel2);border-radius:20px;padding:3px 10px;}
+  .chip.mafia{color:var(--mafia);border-color:#f2557a44;} .chip.town{color:var(--town);border-color:#33d39a44;}
 
-  /* responsive: drop side panels on narrow viewports rather than squishing */
-  @media (max-width:1080px){ main{grid-template-columns:240px 1fr;} .beliefs{display:none;} }
-  @media (max-width:820px){ main{grid-template-columns:1fr;} .roster{display:none;} }
+  .composer{border-top:1px solid var(--line);background:linear-gradient(180deg,#0f121b,#0c0f17);padding:16px 24px;}
+  .composer .lbl{font-weight:700;font-size:13px;margin-bottom:3px;}
+  .composer .sub{color:var(--muted);font-size:11.5px;margin-bottom:11px;}
+  .composer textarea{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--text);
+    border-radius:11px;padding:11px 13px;font-size:13.5px;font-family:var(--sans);resize:vertical;min-height:62px;line-height:1.5;}
+  .composer textarea:focus{outline:none;border-color:var(--accent);}
+  .composer .controls{display:flex;align-items:center;gap:10px;margin-top:11px;flex-wrap:wrap;}
+  .composer select{background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:9px;padding:9px 11px;font-size:13px;}
+  .composer .send{margin-left:auto;}
+  .citeadd{display:flex;gap:8px;flex-wrap:wrap;margin-top:11px;}
+  .citeadd input{flex:1;min-width:200px;background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:9px;padding:9px 11px;font-size:12.5px;}
+  .citelist{display:flex;flex-direction:column;gap:5px;margin-top:9px;}
+  .citelist .c{font-size:12px;color:var(--muted);display:flex;gap:8px;align-items:center;}
+  .citelist .c button{background:none;border:none;color:var(--mafia);font-size:14px;line-height:1;}
+  .waiting{padding:18px 24px;color:var(--muted);font-size:13px;border-top:1px solid var(--line);display:flex;align-items:center;gap:10px;}
+  .spin{width:14px;height:14px;border:2px solid var(--line2);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .loading,.err{text-align:center;color:var(--muted);margin-top:50px;font-size:13.5px;}
+  .err{color:var(--mafia);}
+
+  @media (max-width:1120px){ main.active{grid-template-columns:230px 1fr !important;} .panR{display:none;} }
+  @media (max-width:840px){ main.active{grid-template-columns:1fr !important;} .panL{display:none;} }
 </style>
 </head>
 <body>
 <div class="app">
   <header>
-    <div class="brand"><span class="logo">🌙</span> Mafia Arena <small>LLM social-deduction benchmark</small></div>
-    <div class="ctrls">
-      <span class="field">Players <input id="players" type="number" min="5" max="12" value="7" /></span>
-      <span class="field">Rounds <input id="rounds" type="number" min="0" max="5" value="2" /></span>
-      <span class="field">Seed <input id="seed" class="seed" type="text" value="random" /></span>
-      <button class="btn" id="newgame">▶ New Game</button>
-    </div>
+    <div class="brand"><div class="mark"></div>
+      <div><div class="t">Mafia Arena</div><div class="s">LLM social-deduction benchmark</div></div></div>
     <div class="grow"></div>
-    <label class="switch"><input type="checkbox" id="godmode" /> 👁 God mode</label>
+    <button class="ghost" id="homeBtn">New game</button>
   </header>
 
-  <main>
-    <!-- roster -->
-    <aside class="roster col">
-      <div class="secttl">Players</div>
-      <div id="roster"></div>
-    </aside>
-
-    <!-- stage -->
-    <section class="stage col">
-      <div class="phasebar" id="phasebar">
-        <span class="pemoji" id="pemoji">🌙</span>
-        <div><div class="ptitle" id="ptitle">Press “New Game”</div><div class="psub" id="psub">Every player is an LLM agent.</div></div>
-        <div class="winnerTag" id="winnerTag"></div>
+  <!-- HOME / SETUP -->
+  <div class="home" id="home">
+    <div class="card">
+      <h1>Set up a game</h1>
+      <p class="lede">Every player is an LLM agent. Watch them deceive and deduce, or take a seat and play against them yourself.</p>
+      <div class="modegrid">
+        <div class="mode on" id="modeWatch" data-mode="watch">
+          <div class="h">Watch</div>
+          <div class="d">Autonomous AI vs AI. Includes a live belief dashboard and full evaluation metrics.</div>
+        </div>
+        <div class="mode" id="modePlay" data-mode="play">
+          <div class="h">Play</div>
+          <div class="d">You take one seat against the agents — speak, accuse, vote, and use your night ability.</div>
+        </div>
       </div>
-      <div class="feed" id="feed"><div class="loading">Configure a table and hit <b>New Game</b>.</div></div>
+      <div class="row">
+        <div class="inp"><label>Players</label><input id="cfgPlayers" type="number" min="5" max="12" value="7"></div>
+        <div class="inp"><label>Discussion rounds</label><input id="cfgRounds" type="number" min="0" max="5" value="2"></div>
+        <div class="inp"><label>Seed (optional)</label><input id="cfgSeed" type="text" value="random"></div>
+        <div class="inp" id="roleWrap" style="display:none"><label>Your role</label>
+          <select id="cfgRole">
+            <option value="">Random</option>
+            <option value="villager">Villager</option>
+            <option value="detective">Detective</option>
+            <option value="doctor">Doctor</option>
+            <option value="mafia">Mafia</option>
+          </select></div>
+      </div>
+      <button class="primary startbtn" id="startBtn">Start game</button>
+    </div>
+  </div>
+
+  <!-- WATCH -->
+  <main id="watch" style="grid-template-columns:240px 1fr 308px;">
+    <aside class="panL col"><div class="secttl uppercase">Players</div><div id="wRoster"></div></aside>
+    <section class="stage col">
+      <div class="topbar"><div class="phasepill" id="wPhase"><span class="pdot"></span><span id="wPhaseT">Night 1</span></div>
+        <span class="phasesub" id="wPhaseS">Secret night actions</span>
+        <div class="wintag" id="wWin"></div></div>
+      <div class="feed" id="wFeed"></div>
       <div class="playbar">
-        <button class="icon" id="restart" title="Restart (R)">⏮</button>
-        <button class="icon" id="stepback" title="Back (←)">⏪</button>
-        <button class="icon" id="playpause" title="Play/Pause (Space)">⏸</button>
-        <button class="icon" id="stepfwd" title="Forward (→)">⏩</button>
-        <span class="speed">🐢<input id="speed" type="range" min="1" max="10" value="3" />🐇</span>
-        <div class="prog"><div id="progbar"></div></div>
-        <div class="count" id="count">0 / 0</div>
+        <button class="pbtn" id="wRestart">Restart</button>
+        <button class="pbtn" id="wBack">Back</button>
+        <button class="pbtn play" id="wPlay">Pause</button>
+        <button class="pbtn" id="wFwd">Next</button>
+        <span class="speed">Slow<input id="wSpeed" type="range" min="1" max="10" value="3">Fast</span>
+        <div class="prog"><div id="wProg"></div></div>
+        <div class="count mono" id="wCount">0 / 0</div>
       </div>
     </section>
-
-    <!-- beliefs dashboard -->
-    <aside class="beliefs col">
-      <div class="secttl">Belief Dashboard</div>
-      <div class="obsrow">
-        <select id="observer"></select>
-      </div>
-      <div class="belief-trigger" id="beliefTrigger"></div>
-      <div id="beliefBars"></div>
-      <div class="hint" id="beliefHint">Suspicion each agent holds, updated after every speech, vote, and night. Pick an observer above; “Town consensus” averages all living townsfolk.</div>
-      <div id="metricsCard"></div>
+    <aside class="panR col">
+      <div class="secttl uppercase">Belief dashboard</div>
+      <select class="obs" id="wObs"></select>
+      <div class="btrig" id="wTrig"></div>
+      <div id="wBars"></div>
+      <div class="hint">Suspicion each agent holds about the others, updated after every speech, vote, and night result. “Town consensus” averages the living townsfolk.</div>
+      <label class="hint" style="display:flex;gap:7px;align-items:center;margin-top:12px;cursor:pointer;">
+        <input type="checkbox" id="wGod"> Reveal roles, night actions &amp; private reasoning</label>
+      <div id="wMetrics"></div>
     </aside>
+  </main>
+
+  <!-- PLAY -->
+  <main id="play" style="grid-template-columns:266px 1fr;">
+    <aside class="panL col">
+      <div id="pRole"></div>
+      <div class="secttl uppercase">Players</div><div id="pRoster"></div>
+    </aside>
+    <section class="stage col">
+      <div class="topbar"><div class="phasepill" id="pPhase"><span class="pdot"></span><span id="pPhaseT">Night 1</span></div>
+        <span class="phasesub" id="pPhaseS"></span>
+        <div class="wintag" id="pWin"></div></div>
+      <div class="feed" id="pFeed"></div>
+      <div id="pAction"></div>
+    </section>
   </main>
 </div>
 
 <script>
-const AV=["#7b8bff","#3fd6a0","#ff6384","#ffb454","#5db4ff","#34c9c4","#c792ea","#f78c6c","#82aaff","#c3e88d","#ff9cac","#89ddff"];
-const RBADGE={mafia:"b-mafia",villager:"b-town",detective:"b-detective",doctor:"b-doctor"};
+const AV=["#7c6cff","#33d39a","#f2557a","#f0b24a","#54a8ff","#2fc7c2","#c792ea","#f78c6c","#82aaff","#c3e88d","#ff9cac","#89ddff"];
+const RB={mafia:"b-mafia",villager:"b-villager",detective:"b-detective",doctor:"b-doctor"};
 const $=id=>document.getElementById(id);
-let GAME=null, STEPS=[], idx=0, timer=null, playing=false;
+const esc=s=>(s||"").replace(/[&<>]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[m]));
+const avc=n=>{let h=0;for(const c of n)h=(h*31+c.charCodeAt(0))>>>0;return AV[h%AV.length];};
+let MODE="watch";
 
-function avColor(n){let h=0;for(const c of n)h=(h*31+c.charCodeAt(0))>>>0;return AV[h%AV.length];}
-function god(){return $("godmode").checked;}
-function esc(s){return (s||"").replace(/[&<>]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[m]));}
-function visible(e){
-  if (["reasoning","investigation","night_action"].includes(e.type)) return god();
-  return true;
-}
-function rebuild(keep){
-  const r = STEPS.length? idx/STEPS.length : 1;
-  STEPS = GAME.events.filter(visible);
-  idx = keep? Math.round(r*STEPS.length) : STEPS.length;
-  render();
-}
-
-/* ---- reconstruct visible state at idx ---- */
-function rawCountAt(n){ return n>0 ? (STEPS[n-1]._i + 1) : 0; }
-function stateAt(n){
-  const dead={},revealed={}; let day=0,phase="night",speaking=null,winner=null;
-  for (let i=0;i<n;i++){ const e=STEPS[i];
-    if(e.day)day=e.day; if(e.phase)phase=e.phase;
-    if(e.type==="kill"||e.type==="elimination"){dead[e.target]=1;revealed[e.target]=e.meta&&e.meta.role;}
-    if(e.type==="speech"||e.type==="vote")speaking=e.actor;
-    else if(["night_start","day_start","kill","elimination","game_over"].includes(e.type))speaking=null;
-    if(e.type==="game_over")winner=e.meta&&e.meta.winner;
-  }
-  return {dead,revealed,day,phase,speaking,winner};
-}
-
-function renderRoster(st){
-  const w=$("roster"); w.innerHTML="";
-  for(const p of GAME.players){
-    const dead=st.dead[p.name]; const show=god()||dead||st.winner;
-    const bc=show?(RBADGE[p.role]||"b-unknown"):"b-unknown"; const bt=show?p.role:"???";
-    const d=document.createElement("div");
-    d.className="pcard"+(dead?" dead":"")+(st.speaking===p.name&&!dead?" speaking":"");
-    d.innerHTML=`<div class="avatar" style="background:${avColor(p.name)}">${p.name[0]}</div>
-      <div class="pmeta"><div class="pname">${p.name}</div>
-      <div class="prole"><span class="badge ${bc}">${bt}</span></div></div>
-      ${dead?'<span class="skull">💀</span>':''}`;
-    w.appendChild(d);
-  }
-}
-function renderPhase(st){
-  const bar=$("phasebar"), isDay=st.phase&&st.phase.startsWith("day");
-  bar.classList.toggle("day",isDay);
-  $("pemoji").textContent=st.winner?"🏁":(isDay?"☀️":"🌙");
-  if(st.winner){$("ptitle").textContent="Game over";$("psub").textContent="";}
-  else{$("ptitle").textContent=(isDay?"Day ":"Night ")+(st.day||1);
-       $("psub").textContent=isDay?"Discussion & voting":"Secret night actions";}
-  const w=$("winnerTag"); w.className="winnerTag"+(st.winner?" "+st.winner:""); w.textContent=st.winner?st.winner.toUpperCase()+" WIN":"";
-}
-function evHTML(e){
+/* shared event renderer (events are already filtered by mode) */
+function evHTML(e,me){
   switch(e.type){
     case "game_start": return `<div class="sys">${esc(e.content)}</div>`;
-    case "night_start": return `<div class="sys">🌙 Night ${e.day} — the town sleeps</div>`;
-    case "day_start": return `<div class="sys">☀️ Day ${e.day} — ${esc(e.content)}</div>`;
-    case "kill": return `<div class="sys kill">💀 ${e.target} was killed in the night${e.meta&&e.meta.role?` — was <b>${e.meta.role}</b>`:""}</div>`;
-    case "save": return `<div class="sys save">🛡️ The mafia struck, but the doctor saved the target!</div>`;
-    case "elimination": return `<div class="sys elim">⚖️ ${e.target} was voted out${e.meta&&e.meta.role?` — was <b>${e.meta.role}</b>`:""}</div>`;
-    case "game_over": return `<div class="sys win">🏁 ${esc(e.content)}</div>`;
-    case "investigation": return `<div class="nact">🔎 <b>${e.actor}</b> investigated ${e.target}: <b>${(e.meta&&e.meta.faction||"?").toUpperCase()}</b></div>`;
-    case "night_action": { const k=e.meta&&e.meta.kind||""; const lab=k==="kill_vote"?"🔪 targets":(k==="protect"?"🛡️ protects":"acts on"); return `<div class="nact">• <b>${e.actor}</b> ${lab} ${e.target}</div>`; }
-    case "reasoning": return `<div class="think">💭 ${e.actor}: ${esc(e.content)}</div>`;
-    case "speech": { const c=avColor(e.actor); return `<div class="chat"><div class="avatar" style="background:${c}">${e.actor[0]}</div><div class="bubble"><div class="who" style="color:${c}">${e.actor}</div><div class="txt">${esc(e.content)}</div></div></div>`; }
-    case "vote": {
-      const cites=(e.meta&&e.meta.citations)||[];
-      const c = cites.length? cites.map(x=>`<span class="cite">↳ ${esc(x)}</span>`).join("") : "";
-      return `<div class="vote">🗳️ <b>${e.actor}</b> votes <b>${e.target}</b>${c}</div>`;
-    }
+    case "night_start": return `<div class="sys">Night ${e.day} — the town sleeps</div>`;
+    case "day_start": return `<div class="sys">Day ${e.day} — ${esc(e.content)}</div>`;
+    case "kill": return `<div class="sys kill"><b>${e.target}</b> was killed in the night${e.meta&&e.meta.role?` — was ${e.meta.role}`:""}</div>`;
+    case "save": return `<div class="sys save">The mafia struck, but the doctor saved the target.</div>`;
+    case "elimination": return `<div class="sys elim"><b>${e.target}</b> was voted out${e.meta&&e.meta.role?` — was ${e.meta.role}`:""}</div>`;
+    case "game_over": return `<div class="sys win">${esc(e.content)}</div>`;
+    case "investigation": return `<div class="investig">Investigation — ${e.target} is ${(e.meta&&e.meta.faction||"?").toUpperCase()}</div>`;
+    case "night_action":{const k=e.meta&&e.meta.kind;const lab=k==="kill_vote"?"targets":(k==="protect"?"protects":"acts on");return `<div class="nact">${e.actor} ${lab} ${e.target}</div>`;}
+    case "reasoning": return `<div class="think">${e.actor} (thinking): ${esc(e.content)}</div>`;
+    case "speech":{const c=avc(e.actor);const mine=e.actor===me;return `<div class="chat"><div class="av" style="background:${c}">${e.actor[0]}</div><div class="bubble${mine?" mine":""}"><div class="who" style="color:${c}">${e.actor}${mine?" (you)":""}</div><div class="tx">${esc(e.content)}</div></div></div>`;}
+    case "vote":{const cs=(e.meta&&e.meta.citations)||[];const c=cs.map(x=>`<span class="cite">— ${esc(x)}</span>`).join("");return `<div class="vote"><b>${e.actor}</b> votes <b>${e.target}</b>${c}</div>`;}
     default: return "";
   }
 }
-
-/* ---- belief dashboard ---- */
-function beliefAt(rawCount){
-  if(!GAME.beliefs||!GAME.beliefs.length) return null;
-  let last=null;
-  for(const b of GAME.beliefs){ if(b.i<=rawCount) last=b; else break; }
-  return last;
+function rosterCard(p,opts){
+  const dead=!p.alive&&p.alive!==undefined?true:(opts.dead&&opts.dead[p.name]);
+  const isDead = opts.deadSet? opts.deadSet.has(p.name): (p.alive===false);
+  const role = opts.role!==undefined? opts.role : p.role;
+  const show = role!=null;
+  const bc=show?(RB[role]||"b-unknown"):"b-unknown", bt=show?role:"unknown";
+  const you=p.is_you;
+  return `<div class="pcard${isDead?" dead":""}${you?" you":""}${opts.speaking===p.name&&!isDead?" speaking":""}">
+    <div class="av" style="background:${avc(p.name)}">${p.name[0]}</div>
+    <div class="pmeta"><div class="pn">${p.name}${you?'<span class="youtag">YOU</span>':''}</div>
+    <div class="pr"><span class="badge ${bc}">${bt}</span></div></div>
+    ${isDead?'<span class="dot">out</span>':''}</div>`;
 }
-function renderBeliefs(st){
-  const bars=$("beliefBars"), trg=$("beliefTrigger");
-  const snap=beliefAt(rawCountAt(idx));
-  if(!snap){ bars.innerHTML=""; trg.textContent=""; return; }
-  trg.textContent="after: "+snap.trigger;
-  const obs=$("observer").value;
-  const living=GAME.players.map(p=>p.name).filter(n=>!st.dead[n]);
-  // build subject -> score for chosen observer (or town consensus)
-  let vec={};
-  if(obs==="__town__"){
-    const observers=living.filter(n=>{const p=GAME.players.find(x=>x.name===n);return p.role!=="mafia"||god()?true:true;});
-    // average over all living observers present in snapshot
-    const present=Object.keys(snap.beliefs);
-    for(const o of present){ for(const [s,v] of Object.entries(snap.beliefs[o])){ if(st.dead[s])continue; vec[s]=(vec[s]||0)+v; } }
-    const n=present.length||1; for(const k in vec) vec[k]/=n;
-  } else if(snap.beliefs[obs]){
-    for(const [s,v] of Object.entries(snap.beliefs[obs])){ if(!st.dead[s]) vec[s]=v; }
+function pctClass(x,goodHigh=true){if(x==null)return"";const g=goodHigh?x>=.6:x<=.4,b=goodHigh?x<=.35:x>=.65;return g?"good":b?"bad":"mid";}
+
+/* ===================== WATCH MODE ===================== */
+const W={game:null,steps:[],idx:0,timer:null,playing:false};
+function wGod(){return $("wGod").checked;}
+function wVisible(e){if(["reasoning","investigation","night_action"].includes(e.type))return wGod();return true;}
+function wRebuild(keep){const r=W.steps.length?W.idx/W.steps.length:1;W.steps=W.game.events.filter(wVisible);
+  W.idx=keep?Math.round(r*W.steps.length):W.steps.length;wRender();}
+function wRawCount(n){return n>0?(W.steps[n-1]._i+1):0;}
+function wState(n){const deadSet=new Set();let day=0,phase="night",speaking=null,winner=null;
+  for(let i=0;i<n;i++){const e=W.steps[i];if(e.day)day=e.day;if(e.phase)phase=e.phase;
+    if(e.type==="kill"||e.type==="elimination")deadSet.add(e.target);
+    if(e.type==="speech"||e.type==="vote")speaking=e.actor;
+    else if(["night_start","day_start","kill","elimination","game_over"].includes(e.type))speaking=null;
+    if(e.type==="game_over")winner=e.meta&&e.meta.winner;}
+  return {deadSet,day,phase,speaking,winner};}
+function wRender(){if(!W.game)return;const st=wState(W.idx);
+  const rolesByName={};W.game.players.forEach(p=>rolesByName[p.name]=p.role);
+  $("wRoster").innerHTML=W.game.players.map(p=>{
+    const dead=st.deadSet.has(p.name);const show=wGod()||dead||st.winner;
+    return rosterCard({name:p.name,alive:!dead},{deadSet:st.deadSet,speaking:st.speaking,role:show?p.role:null});
+  }).join("");
+  const isDay=st.phase&&st.phase.startsWith("day");
+  $("wPhase").className="phasepill"+(isDay?" day":"");
+  $("wPhaseT").textContent=st.winner?"Game over":(isDay?"Day "+(st.day||1):"Night "+(st.day||1));
+  $("wPhaseS").textContent=st.winner?"":(isDay?"Discussion & voting":"Secret night actions");
+  const w=$("wWin");w.className="wintag"+(st.winner?" "+st.winner:"");w.textContent=st.winner?st.winner.toUpperCase()+" WIN":"";
+  const feed=$("wFeed");const near=feed.scrollHeight-feed.scrollTop-feed.clientHeight<90;feed.innerHTML="";
+  for(let i=0;i<W.idx;i++){const h=evHTML(W.steps[i]);if(h){const d=document.createElement("div");d.className="ev";d.innerHTML=h;feed.appendChild(d);}}
+  if(near)feed.scrollTop=feed.scrollHeight;
+  $("wCount").textContent=`${W.idx} / ${W.steps.length}`;$("wProg").style.width=(W.steps.length?W.idx/W.steps.length*100:0)+"%";
+  $("wPlay").textContent=W.playing?"Pause":"Play";
+  wBeliefs(st);wMetrics(st);}
+function wBeliefAt(rc){if(!W.game.beliefs||!W.game.beliefs.length)return null;let last=null;for(const b of W.game.beliefs){if(b.i<=rc)last=b;else break;}return last;}
+function wBeliefs(st){const bars=$("wBars"),trg=$("wTrig");const snap=wBeliefAt(wRawCount(W.idx));
+  if(!snap){bars.innerHTML="";trg.textContent="";return;}trg.textContent="after: "+snap.trigger;
+  const obs=$("wObs").value;let vec={};
+  if(obs==="__town__"){const pres=Object.keys(snap.beliefs);for(const o of pres)for(const[s,v]of Object.entries(snap.beliefs[o])){if(st.deadSet.has(s))continue;vec[s]=(vec[s]||0)+v;}const n=pres.length||1;for(const k in vec)vec[k]/=n;}
+  else if(snap.beliefs[obs]){for(const[s,v]of Object.entries(snap.beliefs[obs]))if(!st.deadSet.has(s))vec[s]=v;}
+  const ents=Object.entries(vec).filter(([s])=>s!==obs).sort((a,b)=>b[1]-a[1]);
+  const max=Math.max(.001,...ents.map(([,v])=>Math.max(0,v)));
+  bars.innerHTML=ents.map(([s,v])=>{const pos=Math.max(0,v),w=Math.round(pos/max*100);
+    const col=v<0?"var(--town)":(w>66?"var(--mafia)":w>33?"var(--warn)":"var(--detective)");
+    return `<div class="brow"><div class="l"><span class="nm" style="color:${avc(s)}">${s}</span><span class="vl">${v<0?"cleared":v.toFixed(1)}</span></div><div class="bar"><div style="width:${v<0?100:w}%;background:${col};opacity:${v<0?.4:1}"></div></div></div>`;
+  }).join("")||`<div class="hint">No live suspicion data yet.</div>`;}
+function wMetrics(st){const c=$("wMetrics");if(!st.winner||!W.game.metrics){c.innerHTML="";return;}
+  const m=W.game.metrics,P=x=>x==null?"n/a":Math.round(x*100)+"%";
+  const row=(l,v,gh=true)=>`<div class="mrow"><span>${l}</span><span class="v ${pctClass(v,gh)}">${P(v)}</span></div>`;
+  c.innerHTML=`<div class="mcard"><h3 class="uppercase">Game metrics</h3>
+    <div class="mg uppercase">Detection · town</div>${row("Vote accuracy",m.town_vote_accuracy)}${row("Elimination accuracy",m.elimination_accuracy)}${row("Detective value",m.detective_value)}
+    <div class="mg uppercase">Deception · mafia</div>${row("Deception index",m.deception_index,false)}${row("Alibi consistency",m.mafia_consistency)}
+    <div class="mg uppercase">Reasoning quality</div>${row("Evidence-based votes",m.evidence_vote_rate)}${row("Citation grounding",m.citation_grounding)}</div>`;}
+function wStepF(){if(W.idx<W.steps.length){W.idx++;wRender();}else wPause();}
+function wStepB(){if(W.idx>0){W.idx--;wRender();}}
+function wPlayFn(){if(!W.game||W.idx>=W.steps.length)W.idx=0;W.playing=true;wSched();wRender();}
+function wPause(){W.playing=false;if(W.timer)clearTimeout(W.timer);W.timer=null;wRender();}
+function wToggle(){W.playing?wPause():wPlayFn();}
+function wSched(){if(!W.playing)return;if(W.timer)clearTimeout(W.timer);const sp=+$("wSpeed").value,d=Math.max(280,1900-sp*160);
+  W.timer=setTimeout(()=>{if(W.idx<W.steps.length){W.idx++;wRender();wSched();}else wPause();},d);}
+async function wStart(players,rounds,seed){
+  $("wFeed").innerHTML=`<div class="loading">Running game — the agents are deliberating…</div>`;
+  $("wBars").innerHTML="";$("wMetrics").innerHTML="";
+  const qs=new URLSearchParams({players,rounds,provider:"mock"});if(seed&&seed!=="random")qs.set("seed",seed);
+  try{const r=await fetch("/api/game?"+qs);const d=await r.json();
+    if(d.error){$("wFeed").innerHTML=`<div class="err">${esc(d.error)}</div>`;return;}
+    W.game=d;d.events.forEach((e,i)=>e._i=i);
+    const sel=$("wObs");sel.innerHTML='<option value="__town__">Town consensus</option>'+d.players.map(p=>`<option value="${p.name}">${p.name}’s view</option>`).join("");
+    W.steps=d.events.filter(wVisible);W.idx=0;wRender();wPlayFn();
+  }catch(e){$("wFeed").innerHTML=`<div class="err">Could not reach the server.</div>`;}
+}
+
+/* ===================== PLAY MODE ===================== */
+const PL={view:null,cites:[]};
+async function pStart(players,rounds,seed,role){
+  $("pFeed").innerHTML=`<div class="loading">Dealing roles…</div>`;$("pAction").innerHTML="";
+  try{const r=await fetch("/api/newgame",{method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({players:+players,rounds:+rounds,seed:seed,role:role})});
+    const d=await r.json();if(d.error){$("pFeed").innerHTML=`<div class="err">${esc(d.error)}</div>`;return;}
+    PL.view=d;pRender();
+  }catch(e){$("pFeed").innerHTML=`<div class="err">Could not reach the server.</div>`;}
+}
+async function pAct(action){
+  $("pAction").innerHTML=`<div class="waiting"><div class="spin"></div> The table is deliberating…</div>`;
+  try{const r=await fetch("/api/act",{method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({session:PL.view.session,action})});
+    const d=await r.json();if(d.error){$("pAction").innerHTML=`<div class="err">${esc(d.error)}</div>`;return;}
+    PL.view=d;PL.cites=[];pRender();
+  }catch(e){$("pAction").innerHTML=`<div class="err">Connection lost.</div>`;}
+}
+function pRender(){
+  const v=PL.view,me=v.you.name;
+  // role card
+  const rc=$("pRole");const fc=v.you.faction;
+  let extra="";
+  if(v.you.partners&&v.you.partners.length) extra+=`<div class="kv"><div class="k">Your mafia partners</div><div class="chips">${v.you.partners.map(p=>`<span class="chip mafia">${p}</span>`).join("")}</div></div>`;
+  const known=Object.entries(v.you.known_factions||{});
+  if(known.length) extra+=`<div class="kv"><div class="k">Investigations</div><div class="chips">${known.map(([n,f])=>`<span class="chip ${f==="mafia"?"mafia":"town"}">${n}: ${f}</span>`).join("")}</div></div>`;
+  rc.innerHTML=`<div class="rolecard"><div class="rl"><div class="av" style="background:${avc(me)}">${me[0]}</div>
+    <div><div class="nm">${me}</div><div class="pr"><span class="badge ${RB[v.you.role]||"b-unknown"}">${v.you.role}</span></div></div></div>
+    <div class="desc">You are ${esc(v.you.ability)}.</div>${extra}</div>`;
+  // roster
+  $("pRoster").innerHTML=v.roster.map(p=>rosterCard(p,{deadSet:new Set(v.roster.filter(x=>!x.alive).map(x=>x.name)),role:p.role,speaking:null})).join("");
+  // phase
+  const isDay=v.phase&&v.phase.startsWith("day");
+  $("pPhase").className="phasepill"+(isDay?" day":"");
+  $("pPhaseT").textContent=v.winner?"Game over":(isDay?"Day "+v.day:"Night "+v.day);
+  $("pPhaseS").textContent=v.winner?"":(isDay?"Discussion & voting":"Night phase");
+  const wt=$("pWin");wt.className="wintag"+(v.winner?" "+v.winner:"");
+  wt.textContent=v.winner?((v.winner===v.you.faction?"YOU WIN — ":"YOU LOSE — ")+v.winner.toUpperCase()+" WIN"):"";
+  // feed
+  const feed=$("pFeed");feed.innerHTML="";
+  for(const e of v.events){const h=evHTML(e,me);if(h){const d=document.createElement("div");d.className="ev";d.innerHTML=h;feed.appendChild(d);}}
+  feed.scrollTop=feed.scrollHeight;
+  pComposer();
+}
+function pComposer(){
+  const v=PL.view,box=$("pAction");
+  if(v.done){box.innerHTML=`<div class="composer"><div class="lbl">${v.winner===v.you.faction?"Victory.":"Defeat."}</div>
+    <div class="sub">The ${v.winner} won this game. Open a new game from the top-right to play again.</div></div>`;return;}
+  const p=v.pending;if(!p){box.innerHTML=`<div class="waiting"><div class="spin"></div> Waiting…</div>`;return;}
+  const opts=p.options||[];
+  const sel=(id,withAbstain)=>`<select id="${id}">${withAbstain?'<option value="">— choose —</option>':''}${opts.map(o=>`<option value="${o}">${o}</option>`).join("")}</select>`;
+  if(p.kind==="speech"){
+    box.innerHTML=`<div class="composer"><div class="lbl">Your turn to speak — Day ${v.day}, round ${p.round}/${p.total}</div>
+      <div class="sub">Share a read, defend yourself, ask a question, or build a case. Optionally point suspicion at someone.</div>
+      <textarea id="pMsg" placeholder="Say something to the table…"></textarea>
+      <div class="controls"><label class="sub" style="margin:0">Point at</label>${sel("pTgt",true)}
+      <button class="primary send" id="pSend">Send</button></div></div>`;
+    $("pSend").onclick=()=>pAct({message:$("pMsg").value.trim(),target:$("pTgt").value||null});
+  } else if(p.kind==="vote"){
+    box.innerHTML=`<div class="composer"><div class="lbl">Cast your vote — Day ${v.day}</div>
+      <div class="sub">Choose who to eliminate, and cite real evidence to justify it (this is scored for reasoning quality).</div>
+      <div class="controls"><label class="sub" style="margin:0">Vote</label>${sel("pTgt",false)}</div>
+      <div class="citeadd"><input id="pCite" placeholder="Add evidence, e.g. “Bob accused Carol then defended her”"><button class="ghost" id="pAddCite">Add</button></div>
+      <div class="citelist" id="pCiteList"></div>
+      <div class="controls"><button class="primary send" id="pSend">Submit vote</button></div></div>`;
+    const redraw=()=>{$("pCiteList").innerHTML=PL.cites.map((c,i)=>`<div class="c"><button data-i="${i}">×</button> ${esc(c)}</div>`).join("");
+      document.querySelectorAll("#pCiteList button").forEach(b=>b.onclick=()=>{PL.cites.splice(+b.dataset.i,1);redraw();});};
+    $("pAddCite").onclick=()=>{const x=$("pCite").value.trim();if(x){PL.cites.push(x);$("pCite").value="";redraw();}};
+    $("pCite").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();$("pAddCite").click();}});
+    $("pSend").onclick=()=>pAct({target:$("pTgt").value,citations:PL.cites.slice()});
+    redraw();
+  } else { // night actions
+    const titles={night_kill:["Mafia kill","Choose a player for the mafia to eliminate tonight."],
+      night_investigate:["Investigate","Choose a player to learn their true alignment."],
+      night_protect:["Protect","Choose a player to shield from the mafia tonight (you may pick yourself)."]};
+    const t=titles[p.kind]||["Night action","Choose a target."];
+    box.innerHTML=`<div class="composer"><div class="lbl">${t[0]} — Night ${v.day}</div><div class="sub">${t[1]}</div>
+      <div class="controls">${sel("pTgt",false)}<button class="primary send" id="pSend">Confirm</button></div></div>`;
+    $("pSend").onclick=()=>pAct({target:$("pTgt").value});
   }
-  const entries=Object.entries(vec).filter(([s])=>s!==obs).sort((a,b)=>b[1]-a[1]);
-  const max=Math.max(0.001,...entries.map(([,v])=>Math.max(0,v)));
-  bars.innerHTML = entries.map(([s,v])=>{
-    const pos=Math.max(0,v); const w=Math.round(pos/max*100);
-    const col = v<0? "var(--town)" : (w>66?"var(--mafia)":w>33?"var(--warn)":"var(--detective)");
-    const disp = v<0? "cleared" : v.toFixed(1);
-    return `<div class="brow"><div class="lbl"><span class="nm" style="color:${avColor(s)}">${s}</span><span class="vl">${disp}</span></div>
-      <div class="bar"><div style="width:${v<0?100:w}%;background:${col};opacity:${v<0?.35:1}"></div></div></div>`;
-  }).join("") || `<div class="hint">No live suspicion data at this point.</div>`;
 }
 
-function pctClass(x,goodHigh=true){ if(x==null)return""; const g=goodHigh?x>=.6:x<=.4; const b=goodHigh?x<=.35:x>=.65; return g?"good":b?"bad":"mid"; }
-function renderMetrics(st){
-  const card=$("metricsCard");
-  if(!st.winner||!GAME.metrics){ card.innerHTML=""; return; }
-  const m=GAME.metrics; const P=x=>x==null?"n/a":Math.round(x*100)+"%";
-  const row=(label,val,goodHigh=true)=>`<div class="mrow"><span>${label}</span><span class="v ${pctClass(val,goodHigh)}">${P(val)}</span></div>`;
-  card.innerHTML=`<div class="mcard"><h3>Game metrics</h3>
-    <div class="mgroup">Detection · town</div>
-    ${row("Town vote accuracy",m.town_vote_accuracy)}
-    ${row("Elimination accuracy",m.elimination_accuracy)}
-    ${row("Detective value",m.detective_value)}
-    <div class="mgroup">Deception · mafia</div>
-    ${row("Deception index",m.deception_index,false)}
-    ${row("Alibi consistency",m.mafia_consistency)}
-    <div class="mgroup">Reasoning quality</div>
-    ${row("Evidence-based votes",m.evidence_vote_rate)}
-    ${row("Citation grounding",m.citation_grounding)}
-  </div>`;
-}
-
-function render(){
-  if(!GAME)return;
-  const st=stateAt(idx);
-  renderRoster(st); renderPhase(st);
-  const feed=$("feed"); const near=feed.scrollHeight-feed.scrollTop-feed.clientHeight<90;
-  feed.innerHTML="";
-  for(let i=0;i<idx;i++){ const h=evHTML(STEPS[i]); if(h){const d=document.createElement("div");d.className="ev";d.innerHTML=h;feed.appendChild(d);} }
-  if(near) feed.scrollTop=feed.scrollHeight;
-  renderBeliefs(st); renderMetrics(st);
-  $("count").textContent=`${idx} / ${STEPS.length}`;
-  $("progbar").style.width=(STEPS.length?idx/STEPS.length*100:0)+"%";
-  $("playpause").textContent=playing?"⏸":"▶";
-}
-
-/* ---- playback ---- */
-function stepF(){ if(idx<STEPS.length){idx++;render();} else pause(); }
-function stepB(){ if(idx>0){idx--;render();} }
-function restart(){ idx=0; render(); }
-function play(){ if(!GAME||idx>=STEPS.length)idx=0; playing=true; schedule(); render(); }
-function pause(){ playing=false; if(timer)clearTimeout(timer); timer=null; render(); }
-function toggle(){ playing?pause():play(); }
-function schedule(){ if(!playing)return; if(timer)clearTimeout(timer);
-  const sp=+$("speed").value; const delay=Math.max(280,1900-sp*160);
-  timer=setTimeout(()=>{ if(idx<STEPS.length){idx++;render();schedule();} else pause(); }, delay);
-}
-
-function fillObservers(){
-  const sel=$("observer"); sel.innerHTML="";
-  const o=document.createElement("option"); o.value="__town__"; o.textContent="Town consensus"; sel.appendChild(o);
-  for(const p of GAME.players){ const op=document.createElement("option"); op.value=p.name; op.textContent=p.name+"’s view"; sel.appendChild(op); }
-}
-
-async function newGame(){
-  pause();
-  const players=$("players").value, rounds=$("rounds").value, seed=$("seed").value.trim();
-  $("feed").innerHTML=`<div class="loading">Running game… the agents are deliberating.</div>`;
-  $("ptitle").textContent="Loading…"; $("beliefBars").innerHTML=""; $("metricsCard").innerHTML="";
-  try{
-    const qs=new URLSearchParams({players,rounds,provider:"mock"});
-    if(seed&&seed!=="random") qs.set("seed",seed);
-    const res=await fetch("/api/game?"+qs.toString()); const data=await res.json();
-    if(data.error){ $("feed").innerHTML=`<div class="err">Error: ${esc(data.error)}</div>`; return; }
-    GAME=data; GAME.events.forEach((e,i)=>e._i=i);
-    fillObservers();
-    STEPS=GAME.events.filter(visible); idx=0; render(); play();
-  }catch(e){ $("feed").innerHTML=`<div class="err">Could not reach the server. Is <code>python -m mafia serve</code> running?</div>`; }
-}
-
-$("newgame").onclick=newGame;
-$("playpause").onclick=toggle;
-$("stepfwd").onclick=()=>{pause();stepF();};
-$("stepback").onclick=()=>{pause();stepB();};
-$("restart").onclick=()=>{pause();restart();};
-$("speed").oninput=()=>{ if(playing)schedule(); };
-$("godmode").onchange=()=>{ if(GAME)rebuild(true); };
-$("observer").onchange=()=>{ if(GAME)render(); };
-window.addEventListener("keydown",e=>{
-  if(e.target.tagName==="INPUT"||e.target.tagName==="SELECT")return;
-  if(e.code==="Space"){e.preventDefault();toggle();}
-  else if(e.code==="ArrowRight"){pause();stepF();}
-  else if(e.code==="ArrowLeft"){pause();stepB();}
-  else if(e.key==="r"||e.key==="R"){pause();restart();}
-});
-newGame();
+/* ===================== shell / routing ===================== */
+function show(screen){["home","watch","play"].forEach(s=>{const el=$(s);if(s==="home")el.style.display=screen==="home"?"grid":"none";
+  else el.classList.toggle("active",screen===s);});}
+function goHome(){wPause();show("home");}
+$("homeBtn").onclick=goHome;
+document.querySelectorAll(".mode").forEach(m=>m.onclick=()=>{
+  MODE=m.dataset.mode;document.querySelectorAll(".mode").forEach(x=>x.classList.toggle("on",x===m));
+  $("roleWrap").style.display=MODE==="play"?"flex":"none";});
+$("startBtn").onclick=()=>{
+  const players=$("cfgPlayers").value,rounds=$("cfgRounds").value,seed=$("cfgSeed").value.trim(),role=$("cfgRole").value;
+  if(MODE==="watch"){show("watch");wStart(players,rounds,seed);}
+  else{show("play");pStart(players,rounds,seed,role);}
+};
+// watch controls
+$("wPlay").onclick=wToggle;$("wFwd").onclick=()=>{wPause();wStepF();};$("wBack").onclick=()=>{wPause();wStepB();};
+$("wRestart").onclick=()=>{wPause();W.idx=0;wRender();};$("wSpeed").oninput=()=>{if(W.playing)wSched();};
+$("wGod").onchange=()=>{if(W.game)wRebuild(true);};$("wObs").onchange=()=>{if(W.game)wRender();};
+window.addEventListener("keydown",e=>{if(MODE!=="watch"||$("watch").style.display==="none")return;
+  if(e.target.tagName==="INPUT"||e.target.tagName==="SELECT"||e.target.tagName==="TEXTAREA")return;
+  if(e.code==="Space"){e.preventDefault();wToggle();}else if(e.code==="ArrowRight"){wPause();wStepF();}else if(e.code==="ArrowLeft"){wPause();wStepB();}});
+show("home");
 </script>
 </body>
 </html>

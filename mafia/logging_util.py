@@ -76,37 +76,37 @@ def format_event(event: Event, *, show_reasoning: bool, color: bool = True) -> s
     if t is EventType.REASONING:
         if not show_reasoning:
             return None
-        return _c(f"    ↳ ({event.actor} thinks) {event.content}", "dim", color=color)
+        return _c(f"      ({event.actor} thinks) {event.content}", "dim", color=color)
     if t is EventType.GAME_START:
         return _c(f"\n=== {event.content} ===", "bold", "cyan", color=color)
     if t is EventType.NIGHT_START:
-        return _c(f"\n🌙 Night {event.day}", "bold", "blue", color=color)
+        return _c(f"\n[ Night {event.day} ]", "bold", "blue", color=color)
     if t is EventType.DAY_START:
-        return _c(f"\n☀️  Day {event.day} — {event.content}", "bold", "yellow", color=color)
+        return _c(f"\n[ Day {event.day} ] {event.content}", "bold", "yellow", color=color)
     if t is EventType.INVESTIGATION:
-        return _c(f"   🔎 {event.actor} investigated {event.target}: "
+        return _c(f"   investigation: {event.actor} -> {event.target} is "
                   f"{event.meta.get('faction','?').upper()}", "magenta", color=color)
     if t is EventType.NIGHT_ACTION:
         kind = event.meta.get("kind", "action")
-        return _c(f"   • {event.actor} ({kind}) → {event.target}", "dim", color=color)
+        return _c(f"   - {event.actor} ({kind}) -> {event.target}", "dim", color=color)
     if t is EventType.KILL:
-        return _c(f"   💀 {event.target} was killed in the night "
+        return _c(f"   {event.target} was killed in the night "
                   f"(was {event.meta.get('role','?')}).", "red", color=color)
     if t is EventType.SAVE:
-        return _c("   🛡️  The mafia struck, but the doctor saved the target!", "green", color=color)
+        return _c("   The mafia struck, but the doctor saved the target.", "green", color=color)
     if t is EventType.SPEECH:
         return f"   {_c(event.actor + ':', 'bold', color=color)} {event.content}"
     if t is EventType.VOTE:
-        line = _c(f"   🗳️  {event.actor} votes for {event.target}.", "cyan", color=color)
+        line = _c(f"   {event.actor} votes for {event.target}.", "cyan", color=color)
         cites = (event.meta or {}).get("citations", [])
         for c in cites:
-            line += "\n" + _c(f"        ↳ {c}", "dim", color=color)
+            line += "\n" + _c(f"        - {c}", "dim", color=color)
         return line
     if t is EventType.ELIMINATION:
-        return _c(f"   ⚖️  {event.target} was voted out (was {event.meta.get('role','?')}).",
+        return _c(f"   {event.target} was voted out (was {event.meta.get('role','?')}).",
                   "red", color=color)
     if t is EventType.GAME_OVER:
-        return _c(f"\n🏁 {event.content}", "bold", "green", color=color)
+        return _c(f"\n=== {event.content} ===", "bold", "green", color=color)
     return None
 
 

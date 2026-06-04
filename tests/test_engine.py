@@ -195,6 +195,46 @@ def test_evidence_grounding_detects_hallucination():
     assert grounding == 0.5     # 1 of 2 citations is grounded in a real prior action
 
 
+def test_interactive_session_human_can_play():
+    """A scripted 'human' can drive a session to completion through the same rules."""
+    import random as _r
+    from mafia.session import GameSession
+    sess = GameSession(GameConfig(num_players=6, seed=2), human_role="villager")
+    assert sess.view()["you"]["role"] == "villager"
+    rng = _r.Random(0)
+    guard = 0
+    while not sess.view()["done"] and guard < 300:
+        p = sess.view()["pending"]
+        if p is None:
+            break
+        opts = p.get("options", [])
+        if p["kind"] == "speech":
+            sess.submit({"message": "watch the quiet ones", "target": rng.choice(opts) if opts else None})
+        elif p["kind"] == "vote":
+            t = rng.choice(opts)
+            sess.submit({"target": t, "citations": [f"{t} dodged a question"]})
+        else:
+            sess.submit({"target": rng.choice(opts)})
+        guard += 1
+    v = sess.view()
+    assert v["done"] and v["winner"] in ("town", "mafia")
+    assert "metrics" in v and "reveal_roles" in v
+    # information filtering: a living non-human's role stays hidden mid-game is
+    # implicitly covered; at game over all roles are revealed
+    assert len(v["reveal_roles"]) == 6
+
+
+def test_interactive_detective_learns_alignment():
+    from mafia.session import GameSession
+    sess = GameSession(GameConfig(num_players=6, seed=2), human_role="detective")
+    p = sess.view()["pending"]
+    assert p and p["kind"] == "night_investigate"
+    target = p["options"][0]
+    sess.submit({"target": target})
+    known = sess.view()["you"]["known_factions"]
+    assert target in known and known[target] in ("town", "mafia")
+
+
 def test_mafia_consistency_in_full_game():
     state, metrics = run_game(GameConfig(num_players=7, seed=3), provider="mock")
     # mock agents cite real events, so grounding should be perfect

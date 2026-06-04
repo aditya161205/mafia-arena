@@ -69,18 +69,30 @@ python -m mafia serve          # then open http://localhost:8000
 ```
 
 A self-contained web UI (Python stdlib server + one HTML file, **no JS build, no
-npm**) lets you watch games unfold:
+npm**) has two modes:
 
-- a **New Game** button that runs the engine live (set players / rounds / seed),
+**Watch** — autonomous AI vs AI:
+
+- a setup screen to pick players / discussion rounds / seed,
 - a player roster with avatars and live **alive/dead** status,
-- **day/night theming** and animated, color-coded chat bubbles for every speech,
+- **day/night phases** and animated, color-coded chat bubbles for every speech,
 - **grounded citations shown under each vote** (the evidence the agent cited),
 - a **live Belief Dashboard** (right pane): pick any agent (or "Town consensus")
   and watch their suspicion of everyone else update bar-by-bar through the game,
 - a **Game-metrics card** (detection / deception / reasoning-quality) at game end,
-- play / pause / step / speed controls (and `Space` / `←` / `→` shortcuts),
-- a **👁 God mode** toggle that reveals roles, secret night actions, and each
+- play / pause / step / speed controls (and `Space` / left / right shortcuts),
+- a **God mode** toggle that reveals roles, secret night actions, and each
   agent's private chain-of-thought — turn it off to spectate blind like the town.
+
+**Play** — you take one seat against the agents:
+
+- choose your role (or random); a **role card** shows your ability, your secret
+  mafia partners, and your detective investigation results as you learn them,
+- act through phase-aware composers: **speak** to the table, **vote** (with an
+  evidence/citation box that feeds the reasoning-quality metric), and use your
+  **night ability** (kill / investigate / protect),
+- strict **information filtering** — you only ever see what your role is entitled
+  to see; the engine rules are identical to the autonomous game.
 
 ### Live games with Claude agents
 
@@ -129,14 +141,18 @@ mafia/
   llm.py            Provider abstraction: AnthropicClient + offline MockClient
   prompts.py        Per-role system prompts (mafia = deceive; town = infer) + CoT contract
   agents.py         Agent: filtered memory, belief/suspicion model, action parsing
-  engine.py         Phase logic, night/day resolution, voting, the game loop
+  engine.py         Phase logic, night/day resolution, voting, the game loop,
+                    plus a generator-based interactive_flow for human play
   evaluation.py     Detection, deception (alibi consistency) & reasoning-quality
                     (evidence-grounded voting) metrics, aggregation, Wilson CIs
   logging_util.py   Structured JSON persistence + colourised replay
   arena.py          run_game / run_many / run_ablation orchestration
   cli.py            `python -m mafia {play,eval,ablate,replay,serve}`
-  server.py         stdlib HTTP server: runs games on demand for the web UI
-  static/index.html dependency-free single-page viewer (the browser UI)
+  session.py        interactive human-in-the-loop sessions (generator-driven,
+                    information-filtered per the human's role)
+  server.py         stdlib HTTP server: watch (/api/game) + play (/api/newgame,
+                    /api/act) endpoints for the web UI
+  static/index.html dependency-free single-page app: Watch + Play modes
 tests/              13 tests covering engine invariants, evaluation, parsing
 examples/run_demo.py
 ```
